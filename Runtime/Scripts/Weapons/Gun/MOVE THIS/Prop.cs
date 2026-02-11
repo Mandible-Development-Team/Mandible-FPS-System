@@ -49,12 +49,7 @@ namespace Mandible.FPSController
 
         //Extension Conduct
 
-        #if STATUS_EFFECTS
-        public void AddStatusEffectContribution(StatusEffectContribution contribution)
-        {
-            return;
-        }
-        #endif
+        public void AddStatusEffectContribution(StatusEffectContribution contribution) {}
 
         //Getters / Setters
 

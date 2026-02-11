@@ -36,10 +36,8 @@ namespace Mandible.FPSController
         Color defaultSightsColor;
         Color targetSightsColor;
 
-        #if STATUS_EFFECTS
-        [Header("Status Effect")]
+        [Header("Status Effects")]
         public StatusEffectContribution contribution;
-        #endif
 
         [Header("Particles")]
         public Projectile projectilePrefab;
@@ -297,10 +295,7 @@ namespace Mandible.FPSController
                 OnHitTarget?.Invoke(type, hit, shootDir);
 
                 dmg.TakeDamage(damage);
-
-                #if STATUS_EFFECTS
                 dmg.AddStatusEffectContribution(contribution);
-                #endif
 
                 if(dmg.IsDead)
                 {
@@ -308,7 +303,6 @@ namespace Mandible.FPSController
                 }
             }
 
-            
             if (isRaycast)
             {
                 var rb = hit.collider.GetComponent<Rigidbody>();
@@ -317,7 +311,6 @@ namespace Mandible.FPSController
                     rb.AddForce(shootDir.normalized * bulletForce, ForceMode.Impulse);
                 }
             }
-            
 
             float distance = Vector3.Distance(muzzlePoint.transform.position, hit.point);
             float delay = distance / bulletSpeed;
