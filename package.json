@@ -1,0 +1,16 @@
+{
+  "name": "com.mandible.fps",
+  "version": "0.1.0-preview",
+  "displayName": "Mandible FPS System",
+  "description": "Custom FPS System and framework for characters, guns, and other. Requires Mandible Entities and Player Controller.",
+  "defineConstraints": [
+    {
+      "name": "MANDIBLE_FPS_SYSTEM"
+    }
+  ],
+  "dependencies": {
+    "com.mandible.entities": "0.0.0",
+    "com.mandible.playercontroller": "0.0.0",
+    "com.mandible.core": "0.0.0"
+  }
+}

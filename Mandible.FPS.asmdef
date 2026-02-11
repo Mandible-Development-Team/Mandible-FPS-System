@@ -1,0 +1,27 @@
+{
+    "name": "Mandible.FPS",
+    "rootNamespace": "",
+    "references": [
+        "GUID:ef95c4dea9018f34ab6c48401e307cd9",
+        "GUID:3a23b97dd74cf874e9fa4578af90ecdb",
+        "GUID:ef8b64a5d02ba1545b589673e5f7d023",
+        "GUID:8a33b921c6a4a91449b57791aa292d24",
+        "GUID:51327d444c957584f91f71297e795a84",
+        "GUID:75469ad4d38634e559750d17036d5f7c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.mandible.generic",
+            "expression": "0.0.0",
+            "define": "MANDIBLE_GENERIC_LIBRARY"
+        }
+    ],
+    "noEngineReferences": false
+}
