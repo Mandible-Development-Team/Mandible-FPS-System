@@ -153,8 +153,17 @@ namespace Mandible.FPSController
             if (CanDamage(dmg))
             {
                 HitType type = dmg.GetHitType();
-                OnHitTarget?.Invoke(type, new RaycastHit(), forward); // if you still need a RaycastHit param
-                dmg.TakeDamage(damage);
+                OnHitTarget?.Invoke(type, new RaycastHit(), forward);
+
+                HitData data = new HitData
+                {
+                    hitTarget = dmg,
+                    hitType = type,
+                    hitAmount = damage,
+                    hitInfo = new RaycastHit(),
+                    hitDirection = forward.normalized
+                };
+                dmg.TakeDamage(damage, data);
                 dmg.AddStatusEffectContribution(contribution);
 
                 if (dmg.IsDead)

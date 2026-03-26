@@ -38,7 +38,7 @@ namespace Mandible.FPSController
         public Transform foreHandle;
 
         [Header("UI / Config")]
-        [HideInInspector] public Sprite icon;
+        public Sprite icon;
         [HideInInspector] public List<WeaponComponent> components = new List<WeaponComponent>();
         
         //Events

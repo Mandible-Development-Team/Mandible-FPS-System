@@ -170,12 +170,8 @@ namespace Mandible.FPSController
             // Spread
             Vector3 origin = Vector3.zero;
             Vector3 shootDir = GetSpreadDirection(out origin);
-
             
-            if (bulletFire != null)
-            {
-                EmitBulletfire(origin, shootDir);
-            }
+            if (bulletFire != null) EmitBulletfire(origin, shootDir);
 
             if (isRaycast)
             {
@@ -244,6 +240,40 @@ namespace Mandible.FPSController
         {
             var cam = owner.Camera.transform;
 
+            Ray camRay = new Ray(cam.position, cam.forward);
+
+            Vector3 targetPoint;
+
+            if (Physics.Raycast(camRay, out RaycastHit camHit, 1000f, hitMask))
+            {
+                targetPoint = camHit.point;
+            }
+            else
+            {
+                targetPoint = cam.position + cam.forward * 1000f;
+            }
+
+            Vector2 circle = Random.insideUnitCircle * spreadRadius;
+            origin = muzzlePoint.position +
+                    cam.right * circle.x +
+                    cam.up * circle.y;
+
+            Vector3 baseDir = (targetPoint - origin).normalized;
+
+            float randYaw   = Random.Range(-spreadAngle, spreadAngle);
+            float randPitch = Random.Range(-spreadAngle, spreadAngle);
+            Quaternion spreadRot = Quaternion.Euler(randPitch, randYaw, 0f);
+
+            Vector3 shootDir = spreadRot * baseDir;
+
+            return shootDir.normalized;
+        }
+
+        /*        
+        Vector3 GetSpreadDirection(out Vector3 origin)
+        {
+            var cam = owner.Camera.transform;
+
             float randYaw   = Random.Range(-spreadAngle, spreadAngle);
             float randPitch = Random.Range(-spreadAngle, spreadAngle);
             Quaternion spreadRot = Quaternion.Euler(randPitch, randYaw, 0f);
@@ -257,6 +287,7 @@ namespace Mandible.FPSController
 
             return shootDir.normalized;
         }
+        */
 
         private void ProcessHit(RaycastHit hit, Vector3 shootDir)
         {

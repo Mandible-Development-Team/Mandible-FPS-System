@@ -255,5 +255,17 @@ namespace Mandible.FPSController
 
             return gun.positionState == Gun.GunPosition.Aimed;
         }
+
+        //Getters / Setters
+
+        public List<Weapon> GetWeapons()
+        {
+            return weapons;
+        }
+
+        public Weapon CurrentWeapon
+        {
+            get { return currentWeapon; }
+        }
     }
 }
