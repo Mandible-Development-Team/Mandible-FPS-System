@@ -36,7 +36,7 @@ namespace Mandible.FPSController
             currentHealth = health;
         }
 
-        public virtual void TakeDamage(float amount)
+        public virtual void TakeDamage(float amount, HitData data = default)
         {
             currentHealth -= amount;
             Debug.Log($"{gameObject.name} took {amount} damage.");

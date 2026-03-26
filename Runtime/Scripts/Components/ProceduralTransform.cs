@@ -2,7 +2,7 @@ using UnityEngine;
 using Mandible.FPSController;
 
 [DefaultExecutionOrder(-100)]
-public class ProceduralGunTransform : MonoBehaviour
+public class ProceduralTransform : MonoBehaviour
 {
     [Header("References")]
     public Transform parentTransform;

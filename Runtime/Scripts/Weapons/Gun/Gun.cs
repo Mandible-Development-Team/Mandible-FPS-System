@@ -13,22 +13,34 @@ namespace Mandible.FPSController
     {
         public enum GunState { Idling, Firing, Reloading }
         public enum GunPosition { Default, Aimed }
+
         [Header("Gun State")]
         public GunState gunState = GunState.Idling;
         public GunPosition positionState = GunPosition.Default;
 
-        [Header("Gun Settings")]
+        [Header("Flags")]
         public bool isRaycast = true;
-        public bool isInfiniteAmmo;
+        public bool isAutomatic = true;
+        public bool isInfiniteAmmo = false;
+
+        [Header("Gun Settings")]
+        public float fireRate = 10f;
+        public float reloadTime = 2f;
+        [Space(4)]
+        public float bulletSpeed = 1f;
+        public float bulletForce = 1f;
+        [SerializeField] private float spreadAngle = 6f;
+        [SerializeField] private float spreadRadius = 0.05f;
+        [Space(4)]
         public int ammoInMagazine;
         public int magazineSize = 30;
         public int spareAmmo = 90;
-        public float fireRate = 10f;
-        public float bulletSpeed = 1f;
-        public float bulletForce = 1f;
-        public float reloadTime = 2f;
-        public bool isAutomatic = true;
-        public bool xIsForward = false;
+        
+        [Header("Procedural Aim Positioning")]
+        [SerializeField] Vector3 aimedPosition;
+        [SerializeField] Vector3 defaultPosition;
+        [SerializeField] float transitionSpeed = 1f;
+        [HideInInspector] Vector3 gunPosition = default;
 
         [Header("Sights")]
         [SerializeField] SpriteRenderer sights;
@@ -36,22 +48,12 @@ namespace Mandible.FPSController
         Color defaultSightsColor;
         Color targetSightsColor;
 
-        [Header("Status Effects")]
-        public StatusEffectContribution contribution;
-
         [Header("Particles")]
         public Projectile projectilePrefab;
         public Transform muzzlePoint;
         public ParticleSystem muzzleFlash;
         public ParticleSystem bulletFire;
         public ParticleSystem bulletHit;
-
-        [Header("Audio")]
-        public AudioClip shootSFX;
-        public AudioClip reloadSFX;
-        public AudioClip hitSFX;
-        public AudioClip killSFX;
-        public LayerMask hitMask;
 
         //Events
         [HideInInspector] public UnityEvent OnAim = new UnityEvent();
@@ -61,9 +63,6 @@ namespace Mandible.FPSController
         private bool triggerHeld = false;
         private bool isReloading = false;
         private float nextFireTime = 0f;
-
-        private AudioSource audioSource;
-        private AudioSource screenspaceSFX;
 
         private Coroutine currentCoroutine;
         
@@ -97,12 +96,6 @@ namespace Mandible.FPSController
 
         protected void Start()
         {
-            AudioSource[] sources = GetComponents<AudioSource>();
-            audioSource = sources[0];
-
-            if (sources[1])
-                screenspaceSFX = sources[1];
-
             ownerCamera = owner?.Camera.GetComponent<Camera>();
         }
 
@@ -168,13 +161,6 @@ namespace Mandible.FPSController
             // Consume ammo
             ammoInMagazine--;
 
-            //Sound
-            if (shootSFX != null)
-            {
-                audioSource.pitch = Random.Range(0.95f, 1.05f);
-                audioSource.PlayOneShot(shootSFX, 0.25f);
-            }
-
             // Muzzle & Bullet
             if (muzzleFlash != null)
             {
@@ -190,14 +176,6 @@ namespace Mandible.FPSController
             {
                 EmitBulletfire(origin, shootDir);
             }
-
-            /*
-            Vector3 localDir = transform.InverseTransformDirection(shootDir);
-            Vector3 localUp  = transform.InverseTransformDirection(owner.Camera.transform.up);
-
-            Quaternion modelCorrection = xIsForward ? Quaternion.Euler(0f, -90f, 0f) : Quaternion.identity;
-            muzzlePoint.localRotation = modelCorrection * Quaternion.LookRotation(localDir, localUp);
-            */
 
             if (isRaycast)
             {
@@ -230,7 +208,6 @@ namespace Mandible.FPSController
             p.sender = (owner as MonoBehaviour).gameObject;
         }
 
-        [SerializeField] private float mult;
         private void EmitBulletfire(Vector3 origin, Vector3 shootDir)
         {
             ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
@@ -263,9 +240,6 @@ namespace Mandible.FPSController
             Destroy(impact.gameObject, impact.main.duration + impact.main.startLifetime.constantMax);
         }
 
-        [SerializeField] private float spreadAngle = 6f;
-        [SerializeField] private float spreadRadius = 0.05f;
-
         Vector3 GetSpreadDirection(out Vector3 origin)
         {
             var cam = owner.Camera.transform;
@@ -294,13 +268,24 @@ namespace Mandible.FPSController
 
                 OnHitTarget?.Invoke(type, hit, shootDir);
 
-                dmg.TakeDamage(damage);
+                HitData data = new HitData()
+                {
+                    hitTarget = dmg,
+                    hitType = type,
+                    hitAmount = damage,
+                    hitInfo = hit,
+                    hitDirection = shootDir
+                };
+
+                dmg.TakeDamage(damage, data);
                 dmg.AddStatusEffectContribution(contribution);
 
                 if(dmg.IsDead)
                 {
                     OnKillTarget?.Invoke(type, hit, shootDir);
                 }
+
+                ExportHitData(data);
             }
 
             if (isRaycast)
@@ -355,7 +340,6 @@ namespace Mandible.FPSController
         private IEnumerator Reload()
         {
             isReloading = true;
-            if (reloadSFX != null) screenspaceSFX.PlayOneShot(reloadSFX);
 
             yield return new WaitForSeconds(reloadTime);
 
@@ -375,41 +359,9 @@ namespace Mandible.FPSController
             currentCoroutine = null;
         }
 
-        //Get rid of these please
+        //States
 
-        public override void OnTrigger()
-        {
-
-        }
-
-        public override void OnTriggerDown()
-        {
-            Use();
-        }
-
-        public override void OnTriggerUp()
-        {
-
-        }
-
-        public override void OnAlternateTrigger()
-        {
-            Aim();
-        }
-
-        public override void OnAlternateTriggerDown()
-        {
-            Aim();
-        }
-
-        public override void OnAlternateTriggerUp()
-        {
-            positionState = GunPosition.Default;
-        }
-
-        //End
-
-        public override void Aim()
+        public void Aim()
         {
             positionState = GunPosition.Aimed;
             OnAim?.Invoke();
@@ -420,13 +372,6 @@ namespace Mandible.FPSController
             positionState = GunPosition.Default;
             OnUnAim?.Invoke();
         }
-
-        [Header("TEST - ProceduralAim Positioning")]
-        [SerializeField] Vector3 aimedPosition;
-        [SerializeField] Vector3 defaultPosition;
-        [SerializeField] float transitionSpeed = 1f;
-
-        [HideInInspector] Vector3 gunPosition = default;
 
         public void UpdatePosition()
         {

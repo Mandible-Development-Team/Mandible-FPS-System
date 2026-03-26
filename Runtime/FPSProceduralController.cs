@@ -85,6 +85,9 @@ namespace Mandible.FPSController
         //Actions
         Coroutine action;
 
+        //Refs
+        CameraController cameraController;
+
         protected override void Awake()
         {
             base.Awake();
@@ -96,6 +99,7 @@ namespace Mandible.FPSController
         protected override void Start()
         {
             base.Start();
+            GetReferences();
         }
 
         protected override void Update()
@@ -333,8 +337,6 @@ namespace Mandible.FPSController
 
         void StabilizeCamera()
         {
-            CameraController cameraController = camera.GetComponent<CameraController>();
-
             float currentStability = cameraController.cameraStability;
             float targetStability = CalculateStabilizeCamera() ? maxCameraStability : 0f;
             float blendSpeed = cameraStabilizationBlendSpeed > 0f ? cameraStabilizationBlendSpeed * Time.deltaTime : 1f;
@@ -380,6 +382,11 @@ namespace Mandible.FPSController
             proceduralRig = GetComponentInChildren<HumanoidProceduralRig>();
             aimPivot = GetComponentInChildren<AimPivot>();
             animator = GetComponentInChildren<Animator>();
+        }
+
+        void GetReferences()
+        {
+            if(camera != null) cameraController = camera.GetComponent<CameraController>();
         }
 
         //Advanced

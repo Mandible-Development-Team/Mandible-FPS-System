@@ -6,6 +6,7 @@ using UnityEngine.Events;
 
 using Mandible.FPSController;
 using Mandible.Entities;
+using Mandible.Entities.StatusEffects;
 using Mandible.PlayerController;
 
 namespace Mandible.FPSController
@@ -17,12 +18,17 @@ namespace Mandible.FPSController
         public GameObject ownerObject;
         public IPlayer owner;
         public Camera ownerCamera;
-        public ProceduralGunTransform proceduralGunTransform;
+        [HideInInspector] public ProceduralGunTransform pt;
+        [HideInInspector] public bool isEquipped;
 
         [Header("Weapon Settings")]
-        public bool isEquipped;
         public float damage;
+        public LayerMask hitMask;
 
+        [Header("Status Effects")]
+        public StatusEffectContribution contribution;
+
+        //Procedural
         [Header("Transform")]
         private Quaternion rotationOffset = Quaternion.identity;
         protected Vector3 positionOffset = Vector3.zero;
@@ -32,26 +38,19 @@ namespace Mandible.FPSController
         public Transform foreHandle;
 
         [Header("UI / Config")]
-        public Sprite icon;
-        public List<WeaponComponent> components = new List<WeaponComponent>();
-
+        [HideInInspector] public Sprite icon;
+        [HideInInspector] public List<WeaponComponent> components = new List<WeaponComponent>();
+        
+        //Events
         [Header("Weapon Events")]
-        public UnityEvent OnWeaponEquip = new UnityEvent();
-        public UnityEvent OnWeaponUse = new UnityEvent();
-        public UnityEvent OnWeaponUnequip = new UnityEvent();
+        [HideInInspector] public UnityEvent OnWeaponEquip = new UnityEvent();
+        [HideInInspector] public UnityEvent OnWeaponUse = new UnityEvent();
+        [HideInInspector] public UnityEvent OnWeaponUnequip = new UnityEvent();
 
-        [Header("Hit Events")]
-        public UnityEvent <HitType, RaycastHit, Vector3> OnHitTarget;
-        public UnityEvent <HitType, RaycastHit, Vector3> OnKillTarget;
-
-        [Header("Input Events")]
-        public UnityEvent OnTriggerEvent = new UnityEvent();
-        public UnityEvent OnTriggerDownEvent = new UnityEvent();
-        public UnityEvent OnTriggerUpEvent = new UnityEvent();
-
-        public UnityEvent OnAlternateTriggerEvent = new UnityEvent();
-        public UnityEvent OnAlternateTriggerDownEvent = new UnityEvent();
-        public UnityEvent OnAlternateTriggerUpEvent = new UnityEvent();
+        [Header("Hits")]
+        [HideInInspector] public List<HitData> hitData = new List<HitData>();
+        [HideInInspector] public UnityEvent <HitType, RaycastHit, Vector3> OnHitTarget;
+        [HideInInspector] public UnityEvent <HitType, RaycastHit, Vector3> OnKillTarget;
         
         [Header("Debug")]
         public bool debug = false;
@@ -69,7 +68,10 @@ namespace Mandible.FPSController
 
         void Update()
         {
+            //Components
             HandleWeaponComponents();
+
+            HandleData();
         }
 
         public virtual void LateUpdate()
@@ -97,17 +99,7 @@ namespace Mandible.FPSController
             OnWeaponUnequip.Invoke();
         }
 
-        public virtual void OnTrigger() { }
-
-        public virtual void OnTriggerDown() { }
-
-        public virtual void OnTriggerUp() { }
-
-        public virtual void OnAlternateTrigger(){ }
-
-        public virtual void OnAlternateTriggerDown() { }
-
-        public virtual void OnAlternateTriggerUp() { }
+        //Procedural
 
         void ApplyTransformMod()
         {
@@ -120,15 +112,13 @@ namespace Mandible.FPSController
                 positionMod += component.GetPositionOffset();
             }
 
-            //ProceduralGunTransform
-
-            ProceduralGunTransform pgt = GetComponent<ProceduralGunTransform>();
-            if (pgt != null)
+            //ProceduralTransform
+            if (pt != null)
             {
-                pgt.rotationOffset = rotationOffset;
-                pgt.rotationMod = rotationMod;
-                pgt.positionOffset = positionOffset;
-                pgt.positionMod = positionMod;
+                pt.rotationOffset = rotationOffset;
+                pt.rotationMod = rotationMod;
+                pt.positionOffset = positionOffset;
+                pt.positionMod = positionMod;
             }
             else
             {
@@ -136,8 +126,6 @@ namespace Mandible.FPSController
                 transform.localPosition = positionOffset + positionMod;
             }
         }
-
-        public virtual void Aim() { }
 
         protected virtual bool CanUseWeapon()
         {
@@ -162,16 +150,9 @@ namespace Mandible.FPSController
                 ownerCamera = owner.Camera.GetComponent<Camera>();
             }
 
-            if(proceduralGunTransform == null)
+            if(pt == null)
             {
-                proceduralGunTransform = GetComponent<ProceduralGunTransform>();
-            }
-
-            if(proceduralGunTransform != null)
-            {
-                //Will initialize with FPSProceduralController values (e.g. aim pivot, parent transform)
-
-                //proceduralGunTransform.Initialize();
+                pt = GetComponent<ProceduralGunTransform>();
             }
         }
 
@@ -200,6 +181,31 @@ namespace Mandible.FPSController
             {
                 component.Reset();
             }      
+        }
+
+        //Data
+
+        public void HandleData()
+        {   
+            hitData.Clear();
+        }
+
+        public HitData ExportHitData(HitData data)
+        {
+            hitData.Add(data);
+            return data;
+        }
+        
+        public HitData ExportHitData(HitType hitType = HitType.Normal, RaycastHit hitInfo = default(RaycastHit), Vector3 hitDirection = default(Vector3), float hitAmount = 0f)
+        {
+            HitData data = new HitData();
+            data.hitType = hitType;
+            data.hitInfo = hitInfo;
+            data.hitDirection = hitDirection;
+            data.hitAmount = hitAmount;
+
+            hitData.Add(data);
+            return data;
         }
 
         //Setters

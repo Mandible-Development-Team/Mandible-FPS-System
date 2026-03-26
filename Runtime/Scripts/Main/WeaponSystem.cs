@@ -26,8 +26,8 @@ namespace Mandible.FPSController
 
         //Events
         [Header("Events")]
-        [SerializeField] public UnityEvent <HitType, RaycastHit, Vector3> onHitTarget;
-        [SerializeField] public UnityEvent <HitType, RaycastHit, Vector3> onKillTarget;
+        [HideInInspector] public UnityEvent <HitType, RaycastHit, Vector3> onHitTarget;
+        [HideInInspector] public UnityEvent <HitType, RaycastHit, Vector3> onKillTarget;
 
         //Test
         PlayerInputActions inputActions;
