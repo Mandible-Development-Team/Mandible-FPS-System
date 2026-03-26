@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 
 using UnityEngine;
 using UnityEngine.Events;
@@ -204,23 +205,42 @@ namespace Mandible.FPSController
             p.sender = (owner as MonoBehaviour).gameObject;
         }
 
+        /*
         private void EmitBulletfire(Vector3 origin, Vector3 shootDir)
         {
             ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
             
+            emitParams.velocity = shootDir.normalized * bulletSpeed;
             if(bulletFire.main.simulationSpace != ParticleSystemSimulationSpace.World){
                 Debug.LogWarning("Bullet Fire Particle System should be set to World simulation space for correct bullet direction.");
                 emitParams.position = origin - muzzlePoint.position;
             }
             else
             {
-                emitParams.position = muzzlePoint.position;
+                if(emitParams.)
+                Vector3 initialOffset = shootDir * bulletSpeed * Time.deltaTime;
+                emitParams.position = origin - initialOffset;
             }
 
-            emitParams.velocity = shootDir * bulletSpeed;
             bulletFire.Emit(emitParams, 1);
+            Debug.Log(emitParams.position);
+        }
+        */
+
+        private void EmitBulletfire(Vector3 origin, Vector3 shootDir)
+        {
+            if (bulletFire == null) return;
+
+            bulletFire.transform.position = origin;
+            bulletFire.transform.rotation = Quaternion.LookRotation(shootDir);
+
+            float nudgeDistance = 0f;
+            bulletFire.transform.position += shootDir.normalized * nudgeDistance;
+
+            bulletFire.Play();
         }
 
+        /*
         private void SpawnBulletEffect(RaycastHit hit, float delay)
         {
             StartCoroutine(SpawnBulletHit(hit, delay));
@@ -235,7 +255,9 @@ namespace Mandible.FPSController
             impact.Play();
             Destroy(impact.gameObject, impact.main.duration + impact.main.startLifetime.constantMax);
         }
+        */
 
+        private const float DETECTION_DISTANCE = 1000f;
         Vector3 GetSpreadDirection(out Vector3 origin)
         {
             var cam = owner.Camera.transform;
@@ -244,26 +266,23 @@ namespace Mandible.FPSController
 
             Vector3 targetPoint;
 
-            if (Physics.Raycast(camRay, out RaycastHit camHit, 1000f, hitMask))
+            if (Physics.Raycast(camRay, out RaycastHit camHit, DETECTION_DISTANCE, hitMask))
             {
                 targetPoint = camHit.point;
             }
             else
             {
-                targetPoint = cam.position + cam.forward * 1000f;
+                targetPoint = cam.position + cam.forward * DETECTION_DISTANCE;
             }
 
-            Vector2 circle = Random.insideUnitCircle * spreadRadius;
-            origin = muzzlePoint.position +
-                    cam.right * circle.x +
-                    cam.up * circle.y;
+            origin = muzzlePoint.position;
 
             Vector3 baseDir = (targetPoint - origin).normalized;
 
             float randYaw   = Random.Range(-spreadAngle, spreadAngle);
             float randPitch = Random.Range(-spreadAngle, spreadAngle);
-            Quaternion spreadRot = Quaternion.Euler(randPitch, randYaw, 0f);
 
+            Quaternion spreadRot = Quaternion.Euler(randPitch, randYaw, 0f);
             Vector3 shootDir = spreadRot * baseDir;
 
             return shootDir.normalized;
@@ -331,10 +350,12 @@ namespace Mandible.FPSController
             float distance = Vector3.Distance(muzzlePoint.transform.position, hit.point);
             float delay = distance / bulletSpeed;
 
+            /*
             if(bulletHit != null)
             {
                 SpawnBulletEffect(hit, delay);
-            }   
+            }
+            */
         }
 
         //Sights
@@ -343,7 +364,7 @@ namespace Mandible.FPSController
         {
             ReadSightsState();
 
-            sights.color = Color.Lerp(sights.color, targetSightsColor, sightsVisibilitySpeed * Time.deltaTime);
+            sights.color = Color.Lerp(sights.color, targetSightsColor, sightsVisibilitySpeed * Time.fixedDeltaTime);
         }
 
         public void ReadSightsState()

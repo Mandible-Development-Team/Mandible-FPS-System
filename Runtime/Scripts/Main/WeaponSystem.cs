@@ -64,10 +64,7 @@ namespace Mandible.FPSController
             }
         }
 
-        void Update()
-        {
-            
-        }
+        void Update() { }
 
         void Initialize()
         {

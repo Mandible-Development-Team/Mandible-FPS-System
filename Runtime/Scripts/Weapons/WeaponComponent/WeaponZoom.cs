@@ -43,17 +43,18 @@ public class WeaponZoom : WeaponComponent
     public override void Handle() 
     { 
         currentMultiplier = Mathf.Lerp(currentMultiplier, targetMultiplier, zoomSpeed * Time.deltaTime);
-        fpsCamera?.SetFOV(fpsCamera.baseFOV * 1/currentMultiplier);
     }
 
     public void ZoomIn()
     {
         targetMultiplier = zoomedInMultiplier;
+        fpsCamera?.SetZoomMultiplier(targetMultiplier);
     }
 
     public void ZoomOut()
     {
         targetMultiplier = 1f;
+        fpsCamera?.SetZoomMultiplier(targetMultiplier);
     }
 }
 

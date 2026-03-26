@@ -409,15 +409,16 @@ namespace Mandible.FPSController
         #endif
 
         //Helpers
-
+        private const float JUMPING_THRESHOLD = 0.1f;
         public bool IsJumping()
         {
-            return IsInAir() && currentVelocity.y >= 0f;
+            return IsInAir() && currentVelocity.y >= JUMPING_THRESHOLD;
         }
 
+        private const float FALLING_THRESHOLD = 0.1f;
         public bool IsFalling()
         {
-            return IsInAir() && currentVelocity.y < 0f;
+            return IsInAir() && currentVelocity.y < FALLING_THRESHOLD;
         }
 
         public bool IsSprinting()

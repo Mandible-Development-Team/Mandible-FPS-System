@@ -186,6 +186,30 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CriticalPoint
   targetObject: {fileID: 302709073}
+--- !u!1 &270422469 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8415460176446452919, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+  m_PrefabInstance: {fileID: 8768156054385856293}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &270422471 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 2807438191721365577, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+  m_PrefabInstance: {fileID: 8768156054385856293}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &270422473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 270422469}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f0a175113ec75246aa6033fc9ed716c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mandible.FPS::Mandible.FPSController.BulletFX
+  bulletFire: {fileID: 270422471}
+  bulletHit: {fileID: 3054662125893420360, guid: 81f543a90542bd943a89533e34e1bd8d, type: 3}
 --- !u!1 &302709073
 GameObject:
   m_ObjectHideFlags: 0
@@ -1262,6 +1286,30 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!1 &1929819137 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7482885640149988920, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+  m_PrefabInstance: {fileID: 8768156054385856293}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &1929819139 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 3748901427544664266, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+  m_PrefabInstance: {fileID: 8768156054385856293}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1929819141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1929819137}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f0a175113ec75246aa6033fc9ed716c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mandible.FPS::Mandible.FPSController.BulletFX
+  bulletFire: {fileID: 1929819139}
+  bulletHit: {fileID: 3054662125893420360, guid: 8964c4d72a11d6e4baf1514c22a47a0d, type: 3}
 --- !u!1001 &8768156054385856293
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1270,6 +1318,34 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 578635283154798639, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: TrailModule.lifetime.scalar
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1024999572151455287, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: reloadTime
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2807438191721365577, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: ShapeModule.angle
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2807438191721365577, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: ShapeModule.radius.value
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 2807438191721365577, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: ShapeModule.radiusThickness
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2807438191721365577, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: TrailModule.lifetime.scalar
+      value: 0.02
+      objectReference: {fileID: 0}
+    - target: {fileID: 2807438191721365577, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: CollisionModule.collisionMessages
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3302824703128529449, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
       propertyPath: m_LocalPosition.x
       value: 4.19
@@ -1310,6 +1386,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3748901427544664266, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: ShapeModule.angle
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3748901427544664266, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: ShapeModule.radius.value
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 3748901427544664266, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: CollisionModule.collisionMessages
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3748901427544664266, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: CollisionModule.collidesWith.m_Bits
+      value: 183
+      objectReference: {fileID: 0}
+    - target: {fileID: 5818150889787133737, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: reloadTime
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7498428107840078717, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7671306442318334894, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
       propertyPath: m_Name
       value: ProceduralFPSCharacter
@@ -1317,7 +1417,13 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8415460176446452919, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      insertIndex: 1
+      addedObject: {fileID: 270422473}
+    - targetCorrespondingSourceObject: {fileID: 7482885640149988920, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1929819141}
   m_SourcePrefab: {fileID: 100100000, guid: 2059fc4eeff8217458a2ed85df6eaacd, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
