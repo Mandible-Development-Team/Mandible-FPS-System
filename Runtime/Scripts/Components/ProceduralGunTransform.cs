@@ -4,6 +4,7 @@ using Mandible.FPSController;
 [DefaultExecutionOrder(-100)]
 public class ProceduralGunTransform : MonoBehaviour
 {
+    public Weapon weapon;
     [Header("References")]
     public Transform parentTransform;
     public AimPivot aimPivot;
@@ -21,8 +22,7 @@ public class ProceduralGunTransform : MonoBehaviour
     [Range(0f, 1f)] [SerializeField] float rollCalibrationWeight = 1f;
 
     [Header("Advanced")]
-    [SerializeField] bool proceduralPosition = false;
-    [SerializeField] bool gunForwardOnX = false;
+    [SerializeField] bool disableProcedural = false;
 
     //Base
     private Quaternion baseRot = Quaternion.identity;
@@ -47,6 +47,10 @@ public class ProceduralGunTransform : MonoBehaviour
     
     void Awake()
     {
+        //References
+        weapon = GetComponentInChildren<Weapon>();
+        if(!weapon) Debug.LogError("ProceduralGunTransform: No Weapon component found in children.");
+
         //Transform
         initialRotation = transform.rotation;
         if(parentTransform) initialRotationParent = parentTransform.rotation;
@@ -59,31 +63,64 @@ public class ProceduralGunTransform : MonoBehaviour
 
     void LateUpdate()
     {
-        if(CanUpdate()) 
-            UpdateTransform();
+        if(CanUpdate()) UpdateTransform();
+        UpdateNonProcedural();
         
         PostProcessingPass();
+
+        
     }
 
     //Transform
+    public void UpdateNonProcedural()
+    {
+        transform.position = parentTransform.position;
+        baseRot = parentTransform.rotation;
+        
+        /*
+        Debug.DrawRay(parentTransform.position, parentTransform.right, Color.red);
+        Debug.DrawRay(parentTransform.position, parentTransform.up, Color.green);
+        Debug.DrawRay(parentTransform.position, parentTransform.forward, Color.blue);    
+        */
+    }
     public void UpdateTransform()
     {
         if (!parentTransform) return;
+        if (disableProcedural) return;
+ 
+        //Rotation
+        baseRot = Quaternion.identity;
+        baseRot *= aimPivot.transform.rotation;   // aim rotation
+        baseRot *=  Quaternion.Inverse(aimPivot.transform.parent.rotation) * parentTransform.rotation; // isolated anim rotation
+        baseRot *= weapon.GetForwardRotation(); // relative forward
 
+        // Position
+        basePos = Vector3.zero; 
+        basePos += positionOffset;
+        basePos += positionMod;
+        if(aimPivot) transform.position = aimPivot.transform.TransformPoint(basePos); //Require AimPivot
+    }
+
+    /*
+    public void UpdateTransform_ExplicitQuaternion() //DEPRECATED
+    {
+        if (!parentTransform) return;
+ 
         baseRot = Quaternion.identity;
         basePos = Vector3.zero; 
 
         //Rotation
-        if(aimPivot)
+        if(aimPivot) // Isolate pivot rotation to not double count
         {
             Quaternion localPivot = aimPivot.transform != null ? Quaternion.Inverse(aimPivot.transform.parent.rotation) : Quaternion.identity;
             Quaternion offsetPivot = initialLocalRotationPivot * localPivot;
 
             baseRot *= aimPivot.transform.rotation * offsetPivot;
         }
-        
 
+        baseRot *= rotationOffset; // Custom offset applied after pivot, used for weapon types with different forwards
         baseRot *= parentTransform.rotation;
+
         transform.rotation = baseRot;
 
         // Position
@@ -101,6 +138,7 @@ public class ProceduralGunTransform : MonoBehaviour
             transform.position = basePos;
         }
     }
+    */
 
     //Post Processing
     public void InitializePostProcessingCache()
@@ -189,7 +227,7 @@ public class ProceduralGunTransform : MonoBehaviour
             return;
         }
 
-        Vector3 gunForward = baseRot * (gunForwardOnX ? Vector3.right : Vector3.forward);
+        Vector3 gunForward = baseRot *weapon.GetForwardAxis();
         Vector3 gunUp = baseRot * Vector3.up;
         Vector3 targetUp = forwardReference.up;
 

@@ -57,7 +57,7 @@ namespace Mandible.FPSController
 
             pitch = Mathf.Clamp(pitch, -90f + 1e-3f, 90f - 1e-3f);
 
-            transform.localRotation = Quaternion.Euler(pitch, transform.localRotation.eulerAngles.y, transform.localRotation.eulerAngles.z);
+            transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
         }
 
         //Look

@@ -30,6 +30,17 @@ namespace Mandible.FPSController
 
         //Procedural
         [Header("Transform")]
+        public DirectionalAxis forwardAxis = DirectionalAxis.PositiveZ;
+        public enum DirectionalAxis
+        {
+            [InspectorName("+Z")] PositiveZ,
+            [InspectorName("-Z")] NegativeZ,
+            [InspectorName("+X")] PositiveX,
+            [InspectorName("-X")] NegativeX,
+            [InspectorName("+Y")] PositiveY,
+            [InspectorName("-Y")] NegativeY
+        }
+
         private Quaternion rotationOffset = Quaternion.identity;
         protected Vector3 positionOffset = Vector3.zero;
 
@@ -99,10 +110,11 @@ namespace Mandible.FPSController
             OnWeaponUnequip.Invoke();
         }
 
-        //Procedural
-
+        //Transform
         void ApplyTransformMod()
         {
+            rotationOffset = GetForwardRotation(); // Base Rotation
+
             Quaternion rotationMod = Quaternion.identity;
             Vector3 positionMod = Vector3.zero;
 
@@ -127,13 +139,62 @@ namespace Mandible.FPSController
             }
         }
 
+        /*
+        private Quaternion GetRotationOffset()
+        {
+            Vector3 weaponForward = AxisToVector(forwardAxis);
+            return Quaternion.FromToRotation(weaponForward, Vector3.forward);
+        }
+        */
+
+        public Vector3 GetForwardAxis()
+        {
+            return AxisToVector(forwardAxis);
+        }
+
+        public Vector3 AxisToVector(DirectionalAxis axis)
+        {
+            switch (axis)
+            {
+                case DirectionalAxis.PositiveZ: return Vector3.forward;
+                case DirectionalAxis.NegativeZ: return Vector3.back;
+                case DirectionalAxis.PositiveX: return Vector3.right;
+                case DirectionalAxis.NegativeX: return Vector3.left;
+                case DirectionalAxis.PositiveY: return Vector3.up;
+                case DirectionalAxis.NegativeY: return Vector3.down;
+                default: return Vector3.forward;
+            }
+        }
+
+        public Quaternion GetForwardRotation()
+        {
+            Vector3 weaponForward = AxisToVector(forwardAxis); // Weapon's local forward
+            return Quaternion.FromToRotation(weaponForward, Vector3.forward);
+        }
+
+        /*
+        public Quaternion GetForwardRotation()
+        {
+            switch(forwardAxis)
+            {
+                case DirectionalAxis.PositiveZ: return Quaternion.identity;
+                case DirectionalAxis.NegativeZ: return Quaternion.Euler(0f, 180f, 0f);
+                case DirectionalAxis.PositiveX: return Quaternion.Euler(0f, -90f, 0f);
+                case DirectionalAxis.NegativeX: return Quaternion.Euler(0f, 90f, 0f);
+                case DirectionalAxis.PositiveY: return Quaternion.Euler(-90f, 0f, 0f);
+                case DirectionalAxis.NegativeY: return Quaternion.Euler(90f, 0f, 0f);
+                default: return Quaternion.identity;
+            }
+        }
+        */
+
+        //Flags
         protected virtual bool CanUseWeapon()
         {
             return true;
         }
 
         //Initialization
-
         public void Initialize(GameObject ownerObject)
         {
             this.ownerObject = ownerObject;
@@ -184,7 +245,6 @@ namespace Mandible.FPSController
         }
 
         //Data
-
         public void HandleData()
         {   
             hitData.Clear();

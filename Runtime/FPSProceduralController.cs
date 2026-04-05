@@ -63,7 +63,7 @@ namespace Mandible.FPSController
             Idle,
             Walking,
             Sprinting,
-            Jumping,
+            Flying,
             Falling
         }
         public enum WeaponState
@@ -168,9 +168,9 @@ namespace Mandible.FPSController
 
         private void UpdateMovementState()
         {
-            if (IsJumping())
+            if (IsFlying())
             {
-                currentMovementState = MovementState.Jumping;
+                currentMovementState = MovementState.Flying;
                 return;
             }
             else if (IsFalling())
@@ -219,6 +219,7 @@ namespace Mandible.FPSController
             }
         }
 
+        /*    
         void OnUpdateMovementState()
         {
             string movementState = GetMovementState(currentMovementState); 
@@ -230,6 +231,7 @@ namespace Mandible.FPSController
             string weaponState = GetWeaponState(currentWeaponState);
             animator.CrossFade(weaponState, animationBlendSpeed, 1);
         }
+        */
 
         //Animations
 
@@ -244,7 +246,12 @@ namespace Mandible.FPSController
             animator.SetFloat("Speed", speed);
             animator.SetFloat("SmoothedSpeed", smoothedSpeed);
 
+            animator.SetBool("IsFlying", IsFlying());
+            animator.SetBool("IsFalling", IsFalling());
+            animator.SetBool("IsSprinting", IsSprinting());
+            
             //Movement State
+            /*
             if (currentMovementState != lastMovementState){
                 OnUpdateMovementState();
                 lastMovementState = currentMovementState;
@@ -255,6 +262,7 @@ namespace Mandible.FPSController
                 OnUpdateWeaponState();
                 lastWeaponState = currentWeaponState;
             }
+            */
         }
 
         string GetMovementState(MovementState state)
@@ -264,7 +272,7 @@ namespace Mandible.FPSController
                 MovementState.Idle => "Idle",
                 MovementState.Walking => "Move",
                 MovementState.Sprinting => "Sprint",
-                MovementState.Jumping => "Jump",
+                MovementState.Flying => "Fly",
                 MovementState.Falling => "Fall",
                 _ => "Idle"
             };
@@ -287,11 +295,12 @@ namespace Mandible.FPSController
 
         void OnHitGround(Vector3 impact)
         {
-
+            animator.SetTrigger("OnHitGround");
         }
 
         void SetAnimatorEvents()
         {
+            base.OnJump += OnJump;
             base.OnGroundImpact += OnHitGround;
         }
         
@@ -409,13 +418,18 @@ namespace Mandible.FPSController
         #endif
 
         //Helpers
-        private const float JUMPING_THRESHOLD = 0.1f;
-        public bool IsJumping()
+        public void OnJump()
         {
-            return IsInAir() && currentVelocity.y >= JUMPING_THRESHOLD;
+            animator.SetTrigger("OnJump");
         }
 
-        private const float FALLING_THRESHOLD = 0.1f;
+        private const float FLYING_THRESHOLD = 1e-3f;
+        public bool IsFlying()
+        {
+            return IsInAir() && currentVelocity.y >= FLYING_THRESHOLD;
+        }
+
+        private const float FALLING_THRESHOLD = 1e-3f;
         public bool IsFalling()
         {
             return IsInAir() && currentVelocity.y < FALLING_THRESHOLD;

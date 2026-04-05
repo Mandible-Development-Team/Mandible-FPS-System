@@ -16,6 +16,7 @@ namespace Mandible.FPSController
 
         [Header("General")]
         [Range(0f, 1f)] public float weight = 1f;
+        public bool disableIK = false;
 
         [Header("Spine")]
         [SerializeField] Transform spine;
@@ -76,6 +77,9 @@ namespace Mandible.FPSController
             //Spine
             ApplySpineConstraint();
 
+            //IK
+            if (disableIK) return;
+            
             //Arms
             SolveTwoBoneIK(leftArmContext);
             SolveTwoBoneIK(rightArmContext);
@@ -94,17 +98,21 @@ namespace Mandible.FPSController
         }
 
         // Constraints
-
         void ApplySpineConstraint()
         {
             Transform parent = spine.parent;
 
             Quaternion cameraWorld = controller.camera.transform.rotation;
 
-            spine.localRotation =
-                Quaternion.Inverse(parent.rotation) * cameraWorld;
-                
+            spine.localRotation = Quaternion.Inverse(parent.rotation) * cameraWorld;
         }
+
+        /*
+        void ApplySpineConstraint()
+        {
+            spine.rotation = controller.camera.transform.rotation;
+        }
+        */
 
         public void SolveTwoBoneIK(TwoBoneIKContext context)
         {
