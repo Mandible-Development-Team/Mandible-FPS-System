@@ -1,5 +1,10 @@
 using UnityEngine;
+
 using Mandible.FPSController;
+using Mandible.PlayerController;
+
+using System.Buffers;
+//using System.Diagnostics;
 
 [DefaultExecutionOrder(-100)]
 public class ProceduralGunTransform : MonoBehaviour
@@ -8,6 +13,7 @@ public class ProceduralGunTransform : MonoBehaviour
     [Header("References")]
     public Transform parentTransform;
     public AimPivot aimPivot;
+    public Transform handle;
     public Transform forwardTransform;
     
     [Header("Base Transforms")]
@@ -23,6 +29,10 @@ public class ProceduralGunTransform : MonoBehaviour
 
     [Header("Advanced")]
     [SerializeField] bool disableProcedural = false;
+
+    private Mandible.FPSController.Player player;
+    private FPSProceduralController controller;
+    private HumanoidProceduralRig hpr;
 
     //Base
     private Quaternion baseRot = Quaternion.identity;
@@ -44,7 +54,7 @@ public class ProceduralGunTransform : MonoBehaviour
 
     //Flags
     private bool hasInitializedPostProcessingCache = false;
-    
+
     void Awake()
     {
         //References
@@ -61,32 +71,45 @@ public class ProceduralGunTransform : MonoBehaviour
         if(aimPivot) initialRotationPivotParent = aimPivot.transform.parent.rotation;
     }
 
+    void Start()
+    {
+        //Other References
+        player = (Mandible.FPSController.Player)weapon?.owner;
+        controller = (FPSProceduralController)player?.Controller;
+        hpr = controller?.proceduralRig;
+
+        //Post Process
+        hpr.onPostProcessCompleted += UpdateNonProcedural;
+    }
+
     void LateUpdate()
     {
+        if(disableProcedural) return;
+
         if(CanUpdate()) UpdateTransform();
-        UpdateNonProcedural();
         
         PostProcessingPass();
-
-        
     }
 
     //Transform
     public void UpdateNonProcedural()
     {
-        transform.position = parentTransform.position;
-        baseRot = parentTransform.rotation;
-        
-        /*
+        if(!disableProcedural) return;
+
+        Quaternion targetRot = parentTransform.rotation * weapon.GetForwardRotation() * rotationMod;
+        transform.rotation = targetRot;
+
+        Vector3 offsetFromHandle = handle.position - transform.position;
+        transform.position = parentTransform.position - offsetFromHandle;
+
         Debug.DrawRay(parentTransform.position, parentTransform.right, Color.red);
         Debug.DrawRay(parentTransform.position, parentTransform.up, Color.green);
-        Debug.DrawRay(parentTransform.position, parentTransform.forward, Color.blue);    
-        */
+        Debug.DrawRay(parentTransform.position, parentTransform.forward, Color.blue);
     }
+
     public void UpdateTransform()
     {
         if (!parentTransform) return;
-        if (disableProcedural) return;
  
         //Rotation
         baseRot = Quaternion.identity;
@@ -227,7 +250,7 @@ public class ProceduralGunTransform : MonoBehaviour
             return;
         }
 
-        Vector3 gunForward = baseRot *weapon.GetForwardAxis();
+        Vector3 gunForward = baseRot * Vector3.forward;
         Vector3 gunUp = baseRot * Vector3.up;
         Vector3 targetUp = forwardReference.up;
 
