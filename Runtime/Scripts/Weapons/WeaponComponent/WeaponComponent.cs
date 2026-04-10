@@ -4,7 +4,7 @@ using Mandible.FPSController;
 
 namespace Mandible.FPSController
 {
-    public abstract class WeaponComponent : MonoBehaviour
+    public abstract class ProceduralWeaponModifier : MonoBehaviour
     {
         public Weapon weapon;
         public IPlayer owner;

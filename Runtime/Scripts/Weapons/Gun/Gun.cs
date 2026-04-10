@@ -36,18 +36,6 @@ namespace Mandible.FPSController
         public int ammoInMagazine;
         public int magazineSize = 30;
         public int spareAmmo = 90;
-        
-        [Header("Procedural Aim Positioning")]
-        [SerializeField] Vector3 aimedPosition;
-        [SerializeField] Vector3 defaultPosition;
-        [SerializeField] float transitionSpeed = 1f;
-        [HideInInspector] Vector3 gunPosition = default;
-
-        [Header("Sights")]
-        [SerializeField] SpriteRenderer sights;
-        [SerializeField] float sightsVisibilitySpeed = 10f;
-        Color defaultSightsColor;
-        Color targetSightsColor;
 
         [Header("Particles")]
         public Projectile projectilePrefab;
@@ -79,11 +67,6 @@ namespace Mandible.FPSController
             isReloading = false;
             ammoInMagazine = magazineSize;
 
-            gunPosition = transform.localPosition;
-
-            //Sights
-            InitializeSights();
-
             //INPUT ACTIONS TEST
             inputActions = new PlayerInputActions();
             inputActions.Enable();
@@ -100,17 +83,12 @@ namespace Mandible.FPSController
             ownerCamera = owner?.Camera.GetComponent<Camera>();
         }
 
-        public override void LateUpdate()
+        public void LateUpdate()
         {
-            UpdatePosition();
-            base.LateUpdate();
-
             if (!isEquipped) return;
 
 
             if (triggerHeld) Use();
-            if (sights) HandleSights();
-            
         }
 
         void OnEnable()
@@ -240,23 +218,6 @@ namespace Mandible.FPSController
             bulletFire.Play();
         }
 
-        /*
-        private void SpawnBulletEffect(RaycastHit hit, float delay)
-        {
-            StartCoroutine(SpawnBulletHit(hit, delay));
-        }
-
-        private IEnumerator SpawnBulletHit(RaycastHit hit, float delay)
-        {
-            yield return new WaitForSeconds(delay);
-
-            Quaternion rot = Quaternion.LookRotation(hit.normal);
-            ParticleSystem impact = Instantiate(bulletHit, hit.point, rot);
-            impact.Play();
-            Destroy(impact.gameObject, impact.main.duration + impact.main.startLifetime.constantMax);
-        }
-        */
-
         private const float DETECTION_DISTANCE = 1000f;
         Vector3 GetSpreadDirection(out Vector3 origin)
         {
@@ -287,26 +248,6 @@ namespace Mandible.FPSController
 
             return shootDir.normalized;
         }
-
-        /*        
-        Vector3 GetSpreadDirection(out Vector3 origin)
-        {
-            var cam = owner.Camera.transform;
-
-            float randYaw   = Random.Range(-spreadAngle, spreadAngle);
-            float randPitch = Random.Range(-spreadAngle, spreadAngle);
-            Quaternion spreadRot = Quaternion.Euler(randPitch, randYaw, 0f);
-
-            Vector3 shootDir = (cam.rotation * spreadRot) * Vector3.forward;
-
-            Vector2 circle = Random.insideUnitCircle * spreadRadius;
-            origin = muzzlePoint.position +
-                    cam.right * circle.x +
-                    cam.up * circle.y;
-
-            return shootDir.normalized;
-        }
-        */
 
         private void ProcessHit(RaycastHit hit, Vector3 shootDir)
         {
@@ -348,43 +289,6 @@ namespace Mandible.FPSController
             }
 
             float distance = Vector3.Distance(muzzlePoint.transform.position, hit.point);
-            float delay = distance / bulletSpeed;
-
-            /*
-            if(bulletHit != null)
-            {
-                SpawnBulletEffect(hit, delay);
-            }
-            */
-        }
-
-        //Sights
-        
-        private void HandleSights()
-        {
-            ReadSightsState();
-
-            sights.color = Color.Lerp(sights.color, targetSightsColor, sightsVisibilitySpeed * Time.fixedDeltaTime);
-        }
-
-        public void ReadSightsState()
-        {
-            if (positionState == GunPosition.Aimed)
-            {
-                targetSightsColor = defaultSightsColor;
-            }
-            else
-            {
-                targetSightsColor = Color.clear;
-            }        
-        }
-
-        public void InitializeSights()
-        {
-            if (sights == null) return;
-            
-            defaultSightsColor = sights.color;
-            sights.color = Color.clear;
         }
 
         //Actions
@@ -425,26 +329,6 @@ namespace Mandible.FPSController
             OnUnAim?.Invoke();
         }
 
-        public void UpdatePosition()
-        {
-            switch (positionState)
-            {
-                case GunPosition.Default:
-                    gunPosition = defaultPosition;
-                    break;
-
-                case GunPosition.Aimed:
-                    gunPosition = aimedPosition;
-                    break;
-
-                default:
-                    gunPosition = defaultPosition;
-                    break;
-            }
-            
-            Vector3 offset = Vector3.Lerp(positionOffset, gunPosition, transitionSpeed);
-            SetPositionOffset(offset);
-        }
 
         public void ResetState()
         {

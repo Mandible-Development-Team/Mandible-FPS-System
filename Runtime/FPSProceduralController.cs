@@ -27,6 +27,9 @@ namespace Mandible.FPSController
         [SerializeField] private float speedSmoothness = 0.2f;
         [SerializeField] private float animationBlendSpeed = 0.5f;
         private float smoothedSpeed;
+
+        //[Header("TEST PROCEDURAL LAYER")]
+        //[SerializeField] private 
         
         [Header("Aim Sense")]
         [SerializeField] bool useAimSense = true;
