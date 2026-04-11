@@ -21,6 +21,37 @@ public class ProceduralGunTransform : ProceduralWeaponTransform
 
     private Quaternion calculatedForwardOffset;
 
+    //Post Processing
+    public override void PostProcessingPass()
+    {
+        //Post-Process Rotation
+        if(!hasInitializedPostProcessingCache) InitializePostProcessingCache();
+        
+        //Rotational Sway / Lag
+        baseRot *= GetRotationalSway();
+        
+        //Auto-Calculation
+        if(CanAutoCalculateForward()) AutoCalculateForward();
+        if(CanAutoCalculateForwardProcedural()) AutoCalculateForwardProcedural();
+
+        if(autoCalculateRoll) AutoCalculateRoll();
+
+        //Modifiers (staged after post processing for better behavior)
+        rotationMod = Quaternion.identity;
+        positionMod = Vector3.zero;
+        foreach(var modifier in modifiers)
+        {
+            rotationMod *= modifier.GetRotationOffset();
+            positionMod += modifier.GetPositionOffset();
+        }
+        baseRot *= rotationMod;
+        basePos += positionMod;
+
+        //Apply
+        transform.rotation = baseRot; 
+        transform.position = aimPivot.transform.TransformPoint(basePos);
+    }
+
     //Procedural Positioning
     public override System.Enum ReadWeaponPositionState()
     {

@@ -29,6 +29,10 @@ namespace Mandible.FPSController
         private PlayerInputActions input;
         private Vector2 lookInput = Vector2.zero;
 
+        //Velocity
+        private Vector3 lastEuler;
+        private Vector3 screenVelocity;
+
         //Recoil
         private Vector2 recoil;
 
@@ -56,8 +60,9 @@ namespace Mandible.FPSController
             HandleLook();
 
             pitch = Mathf.Clamp(pitch, -90f + 1e-3f, 90f - 1e-3f);
-
             transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+
+            CalculateLookVelocity();
         }
 
         //Look
@@ -66,6 +71,19 @@ namespace Mandible.FPSController
         {
             float sensitivity = 3f;
             pitch -= lookInput.y * sensitivity * Time.deltaTime;
+        }
+
+        void CalculateLookVelocity()
+        {
+            Vector3 currentEuler = transform.eulerAngles;
+
+            float deltaYaw = Mathf.DeltaAngle(lastEuler.y, currentEuler.y);
+            float deltaPitch = Mathf.DeltaAngle(-lastEuler.x, -currentEuler.x);
+
+            Vector3 rawVelocity = new Vector3(deltaYaw, deltaPitch, 0f) / Time.deltaTime;
+            screenVelocity = Vector3.Lerp(screenVelocity, rawVelocity, Time.deltaTime * 10f);
+
+            lastEuler = currentEuler;
         }
 
         //API
@@ -98,6 +116,11 @@ namespace Mandible.FPSController
             if (Quaternion.Angle(q, Quaternion.identity) < threshold * Mathf.Rad2Deg)
                 return Quaternion.identity;
             return q;
+        }
+
+        public Vector3 GetScreenVelocity()
+        {
+            return screenVelocity;
         }
     }
 }

@@ -82,6 +82,9 @@ namespace Mandible.FPSController{
             if(aimPivot) initialRotationPivot = aimPivot.transform.rotation;
             if(aimPivot) initialLocalRotationPivot = aimPivot.transform.rotation * Quaternion.Inverse(aimPivot.transform.parent.rotation);
             if(aimPivot) initialRotationPivotParent = aimPivot.transform.parent.rotation;
+
+            //Modifiers
+            InitializeProceduralWeaponModifiers();
         }
 
         void Start()
@@ -93,9 +96,11 @@ namespace Mandible.FPSController{
 
             //Post Process
             hpr.onPostProcessCompleted += UpdateNonProcedural;
+        }
 
-            //Modifiers
-            InitializeProceduralWeaponModifiers();
+        void Update()
+        {
+            HandleProceduralWeaponModifiers();
         }
 
         void LateUpdate()
@@ -164,18 +169,72 @@ namespace Mandible.FPSController{
         }
 
         //Procedural Positioning
-
         public Vector3 GetProceduralPosition()
         {
             System.Enum positionState = ReadWeaponPositionState();
-            currentProceduralPosition = Vector3.Lerp(currentProceduralPosition, PositionFromState(positionState), transitionSpeed * Time.deltaTime);
-            return currentProceduralPosition;
+            Vector3 targetBasePos = PositionFromState(positionState);
+            
+            currentProceduralPosition = Vector3.Lerp(currentProceduralPosition, targetBasePos, transitionSpeed * Time.deltaTime);
+
+            Vector3 proceduralPosition = currentProceduralPosition + GetPositionalSway();
+            return proceduralPosition;
         }
 
         public virtual System.Enum ReadWeaponPositionState() => default;
-
         public virtual Vector3 PositionFromState(System.Enum state) => defaultPosition;
-        
+
+        //Weapon Sway
+        [Header("Weapon Sway")]
+        public float swayMultiplier = 0.002f;
+        public float maxSway = 0.08f;
+        public float swaySpeed = 8f;
+        [Space(4)]
+        public Vector3 rotSwayMultiplier = new Vector3(0.5f, 0.3f, 0.2f);
+        public Vector3 maxRotSway = new Vector3(4f, 3f, 2f);
+        public float rotSwaySpeed = 8f;
+
+        private Vector3 currentSway;
+        private Vector3 swayVelocity;
+        private Vector3 currentRotSwayEuler;
+        private Vector3 targetRotSwayEuler;
+
+        protected Vector3 GetPositionalSway()
+        {
+            if (!aimPivot) return Vector3.zero;
+
+            Vector3 vel = aimPivot.GetScreenVelocity();
+            Vector3 targetSway = new Vector3(-vel.x, -vel.y, 0f) * swayMultiplier;
+            targetSway.x = Mathf.Clamp(targetSway.x, -maxSway, maxSway);
+            targetSway.y = Mathf.Clamp(targetSway.y, -maxSway, maxSway);
+
+            float alpha = 1f - Mathf.Exp(-swaySpeed * Time.deltaTime);
+            currentSway = Vector3.Lerp(currentSway, targetSway, alpha);
+
+            return currentSway;
+        }
+
+        protected Quaternion GetRotationalSway()
+        {
+            if (!aimPivot) return Quaternion.identity;
+
+            Vector3 vel = aimPivot.GetScreenVelocity();
+
+            targetRotSwayEuler.x = -vel.y * rotSwayMultiplier.x;   // pitch
+            targetRotSwayEuler.y =  vel.x * rotSwayMultiplier.y;   // yaw
+            targetRotSwayEuler.z = -vel.x * rotSwayMultiplier.z;   // roll
+
+            // Clamp
+            targetRotSwayEuler.x = Mathf.Clamp(targetRotSwayEuler.x, -maxRotSway.x, maxRotSway.x);
+            targetRotSwayEuler.y = Mathf.Clamp(targetRotSwayEuler.y, -maxRotSway.y, maxRotSway.y);
+            targetRotSwayEuler.z = Mathf.Clamp(targetRotSwayEuler.z, -maxRotSway.z, maxRotSway.z);
+
+            // Smooth using same exponential lerp as positional sway
+            float alpha = 1f - Mathf.Exp(-rotSwaySpeed * Time.deltaTime);
+            currentRotSwayEuler = Vector3.Lerp(currentRotSwayEuler, targetRotSwayEuler, alpha);
+
+            return Quaternion.Euler(currentRotSwayEuler);
+        }
+
         //Post Processing
         public void InitializePostProcessingCache()
         {
@@ -187,6 +246,9 @@ namespace Mandible.FPSController{
             //Post-Process Rotation
             if(!hasInitializedPostProcessingCache) InitializePostProcessingCache();
             
+            //Rotational Sway / Lag
+            baseRot *= GetRotationalSway();
+
             //Modifiers (staged after post processing for better behavior)
             rotationMod = Quaternion.identity;
             positionMod = Vector3.zero;
