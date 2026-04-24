@@ -30,8 +30,8 @@ namespace Mandible.FPSController
         [Space(4)]
         public float bulletSpeed = 1f;
         public float bulletForce = 1f;
-        [SerializeField] private float spreadAngle = 6f;
-        [SerializeField] private float spreadRadius = 0.05f;
+        [SerializeField] public float spreadAngle = 6f;
+        [SerializeField] public float spreadRadius = 0.05f;
         [Space(4)]
         public int ammoInMagazine;
         public int magazineSize = 30;
