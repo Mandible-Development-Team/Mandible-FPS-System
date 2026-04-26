@@ -9,8 +9,8 @@ namespace Mandible.FPSController
         public Transform transformSource;
 
         [Header("Tuning")]
-        [Range(0f, 1f)]
-        public float weight = 1f;
+        [SerializeField] public float sensitivity = 3f;
+        [Range(0f, 1f)] public float weight = 1f;
 
         [Header("Axes")]
         public bool applyYaw   = true;
@@ -69,8 +69,7 @@ namespace Mandible.FPSController
         private const float LOOK_PITCH_EPSILON = 1e-3f;
         void HandleLook()
         {
-            float sensitivity = 3f;
-            pitch -= lookInput.y * sensitivity * Time.deltaTime;
+            pitch -= lookInput.y * sensitivity * 0.01f;
         }
 
         void CalculateLookVelocity()
