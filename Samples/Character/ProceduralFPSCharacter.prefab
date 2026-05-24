@@ -12903,6 +12903,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b84ecb22151ee6040bc929fa6554901e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProceduralChildTransform
+  weapon: {fileID: 0}
   parentTransform: {fileID: 4258700729108282327}
   aimPivot: {fileID: 0}
   forwardTransform: {fileID: 5270294935921768011}
@@ -12913,8 +12914,7 @@ MonoBehaviour:
   forwardCalculationWeight: 1
   autoCalculateRoll: 0
   rollCalibrationWeight: 0
-  proceduralPosition: 0
-  gunForwardOnX: 0
+  disableProcedural: 0
   rotationMod: {x: 0, y: 0.70710677, z: 0, w: 0.70710677}
   positionMod: {x: 0, y: 0, z: 0}
   autoCalculateForwardProcedural: 0
@@ -13308,6 +13308,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Mandible.FPSController.HumanoidProceduralRig
   controller: {fileID: 4159197167320423010}
   weight: 1
+  disableIK: 0
   spine: {fileID: 869884943336377753}
   pitchLimits: {x: -90, y: 90}
   leftUpperArm: {fileID: 4021967321146196618}
@@ -18683,6 +18684,7 @@ MonoBehaviour:
   contribution:
     name: Shock
     value: 1
+  forwardAxis: 0
   handle: {fileID: 8325628560833934035}
   foreHandle: {fileID: 8726411777985828957}
   icon: {fileID: 21300000, guid: 0ac0e9abb2dfecc4294f5861e97d6d76, type: 3}
@@ -18746,6 +18748,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b84ecb22151ee6040bc929fa6554901e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  weapon: {fileID: 0}
   parentTransform: {fileID: 4258700729108282327}
   aimPivot: {fileID: 3978717839369578932}
   forwardTransform: {fileID: 5270294935921768011}
@@ -18756,8 +18759,7 @@ MonoBehaviour:
   forwardCalculationWeight: 1
   autoCalculateRoll: 0
   rollCalibrationWeight: 1
-  proceduralPosition: 1
-  gunForwardOnX: 0
+  disableProcedural: 0
   rotationMod: {x: 0, y: 0, z: 0, w: 1}
   positionMod: {x: 0, y: 0, z: 0}
   autoCalculateForwardProcedural: 0
@@ -19689,6 +19691,8 @@ MonoBehaviour:
   controllerSensitivity: 0
   baseFOV: 60
   enableProceduralEffects: 1
+  zoomMultiplier: 1
+  zoomTransitionSpeed: 5
   bobBaseAmplitude: 0.0075
   bobMaxAmplitude: 0.02
   bobFrequency: 7
@@ -26964,6 +26968,7 @@ MonoBehaviour:
   contribution:
     name: Burn
     value: 15
+  forwardAxis: 0
   handle: {fileID: 7406657044570527567}
   foreHandle: {fileID: 8773955847305037059}
   icon: {fileID: 21300000, guid: 0ac0e9abb2dfecc4294f5861e97d6d76, type: 3}
@@ -27027,6 +27032,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b84ecb22151ee6040bc929fa6554901e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  weapon: {fileID: 0}
   parentTransform: {fileID: 4258700729108282327}
   aimPivot: {fileID: 3978717839369578932}
   forwardTransform: {fileID: 5270294935921768011}
@@ -27037,8 +27043,7 @@ MonoBehaviour:
   forwardCalculationWeight: 1
   autoCalculateRoll: 0
   rollCalibrationWeight: 1
-  proceduralPosition: 1
-  gunForwardOnX: 0
+  disableProcedural: 0
   rotationMod: {x: 0, y: 0, z: 0, w: 1}
   positionMod: {x: 0, y: 0, z: 0}
   autoCalculateForwardProcedural: 0
@@ -27324,7 +27329,6 @@ GameObject:
   - component: {fileID: 4159197167320423010}
   - component: {fileID: 1262955186129469224}
   - component: {fileID: 2181715057516734761}
-  - component: {fileID: 4188276333402822134}
   m_Layer: 6
   m_Name: ProceduralFPSCharacter
   m_TagString: Untagged
@@ -27535,19 +27539,6 @@ MonoBehaviour:
         enabled: 1
         ultimateAbility: {fileID: 11400000, guid: f0d3947d3d2cd274c80553eee1130cae, type: 2}
         ultimatePriority: 100
---- !u!114 &4188276333402822134
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7671306442318334894}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c7005231a7da5a4bae9a112f398e290, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Mandible.Core::InputManager
-  inputMode: 0
 --- !u!1 &7838868362063839497
 GameObject:
   m_ObjectHideFlags: 0
@@ -38741,6 +38732,7 @@ MonoBehaviour:
   contribution:
     name: Burn
     value: 1
+  forwardAxis: 0
   handle: {fileID: 6608274395589753214}
   foreHandle: {fileID: 6608274395589753214}
   icon: {fileID: 0}
@@ -38780,6 +38772,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b84ecb22151ee6040bc929fa6554901e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Mandible.FPS::ProceduralGunTransform
+  weapon: {fileID: 0}
   parentTransform: {fileID: 4258700729108282327}
   aimPivot: {fileID: 3978717839369578932}
   forwardTransform: {fileID: 5270294935921768011}
@@ -38790,8 +38783,7 @@ MonoBehaviour:
   forwardCalculationWeight: 1
   autoCalculateRoll: 0
   rollCalibrationWeight: 1
-  proceduralPosition: 1
-  gunForwardOnX: 0
+  disableProcedural: 0
   rotationMod: {x: 0, y: 0, z: 0, w: 1}
   positionMod: {x: 0, y: 0, z: 0}
   autoCalculateForwardProcedural: 0
