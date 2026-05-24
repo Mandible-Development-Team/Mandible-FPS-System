@@ -58,10 +58,9 @@ namespace Mandible.FPSController
             ownerCamera = owner?.Camera.GetComponent<Camera>();
         }
 
-        public override void LateUpdate()
+        public void LateUpdate()
         {
             UpdatePosition();
-            base.LateUpdate();
 
             //if (!isEquipped) return;
 

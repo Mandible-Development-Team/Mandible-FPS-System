@@ -2,7 +2,7 @@ using UnityEngine;
 using Mandible.FPSController;
 using Mandible.PlayerController;
 
-public class WeaponRecoil : WeaponComponent
+public class WeaponRecoil : ProceduralWeaponModifier
 {
     [Header("Recoil Settings")]
     [SerializeField] float recoilStrength = 2f;
@@ -86,11 +86,11 @@ public class WeaponRecoil : WeaponComponent
     {
         base.Update();
 
-        currentRecoilRotation = Vector3.Lerp(currentRecoilRotation, targetRecoilRotation, Time.fixedDeltaTime * recoilSnapSpeed);
-        targetRecoilRotation = Vector3.Lerp(targetRecoilRotation, Vector3.zero, Time.fixedDeltaTime * recoilRecoverySpeed);
+        currentRecoilRotation = Vector3.Lerp(currentRecoilRotation, targetRecoilRotation, Time.deltaTime * recoilSnapSpeed);
+        targetRecoilRotation = Vector3.Lerp(targetRecoilRotation, Vector3.zero, Time.deltaTime * recoilRecoverySpeed);
 
-        currentRecoilPosition = Vector3.Lerp(currentRecoilPosition, targetRecoilPosition, Time.fixedDeltaTime * recoilSnapSpeed);
-        targetRecoilPosition = Vector3.Lerp(targetRecoilPosition, Vector3.zero, Time.fixedDeltaTime * recoilRecoverySpeed);
+        currentRecoilPosition = Vector3.Lerp(currentRecoilPosition, targetRecoilPosition, Time.deltaTime * recoilSnapSpeed);
+        targetRecoilPosition = Vector3.Lerp(targetRecoilPosition, Vector3.zero, Time.deltaTime * recoilRecoverySpeed);
     }
 
     //API
@@ -109,11 +109,11 @@ public class WeaponRecoil : WeaponComponent
     {
         if(applyToCamera)
         {
-            recoilT += recoilStrength * cameraScale * Time.fixedDeltaTime;
+            recoilT += recoilStrength * cameraScale * Time.deltaTime;
             Vector2 recoil = GetRecoil(recoilT);
             aimPivot.AddRecoil(recoil);
 
-            Vector3 recoilVector = new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), 0f) * recoilStrength * Time.fixedDeltaTime;
+            Vector3 recoilVector = new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), 0f) * recoilStrength * Time.deltaTime;
             cameraController?.AddShakeImpulse(recoilVector, cameraScale);
         }
     }

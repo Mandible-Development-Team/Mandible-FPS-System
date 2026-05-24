@@ -1,19 +1,17 @@
 using UnityEngine;
+
 using Mandible.FPSController;
+using Mandible.PlayerController;
+
+using System.Buffers;
+//using System.Diagnostics;
 
 [DefaultExecutionOrder(-100)]
-public class ProceduralGunTransform : MonoBehaviour
+public class ProceduralGunTransform : ProceduralWeaponTransform
 {
-    public Weapon weapon;
-    [Header("References")]
-    public Transform parentTransform;
-    public AimPivot aimPivot;
-    public Transform forwardTransform;
-    
-    [Header("Base Transforms")]
-    [SerializeField] bool updateTransform = true;
-    [SerializeField] public Quaternion rotationOffset = Quaternion.identity;
-    [SerializeField] public Vector3 positionOffset = Vector3.zero;
+    [Header("Procedural Positions")]
+    [SerializeField] Vector3 aimedPosition;
+    [SerializeField] Vector3 loweredPosition;
 
     [Header("Auto-Calculation")]
     [SerializeField] bool autoCalculateForward = false;
@@ -21,124 +19,59 @@ public class ProceduralGunTransform : MonoBehaviour
     [SerializeField] bool autoCalculateRoll = false;
     [Range(0f, 1f)] [SerializeField] float rollCalibrationWeight = 1f;
 
-    [Header("Advanced")]
-    [SerializeField] bool disableProcedural = false;
-
-    //Base
-    private Quaternion baseRot = Quaternion.identity;
-    private Vector3 basePos = Vector3.zero;
-
-    //Mods
-    [HideInInspector] public Quaternion rotationMod = Quaternion.identity;
-    [HideInInspector] public Vector3 positionMod = Vector3.zero;
-
-    //Cache
-    private Quaternion initialRotation;
-    private Quaternion initialRotationParent;
-
-    private Quaternion initialRotationPivot;
-    private Quaternion initialLocalRotationPivot;
-    private Quaternion initialRotationPivotParent;
-
     private Quaternion calculatedForwardOffset;
 
-    //Flags
-    private bool hasInitializedPostProcessingCache = false;
-    
-    void Awake()
+    //Post Processing
+    public override void PostProcessingPass()
     {
-        //References
-        weapon = GetComponentInChildren<Weapon>();
-        if(!weapon) Debug.LogError("ProceduralGunTransform: No Weapon component found in children.");
-
-        //Transform
-        initialRotation = transform.rotation;
-        if(parentTransform) initialRotationParent = parentTransform.rotation;
-
-        //Aim Pivot
-        if(aimPivot) initialRotationPivot = aimPivot.transform.rotation;
-        if(aimPivot) initialLocalRotationPivot = aimPivot.transform.rotation * Quaternion.Inverse(aimPivot.transform.parent.rotation);
-        if(aimPivot) initialRotationPivotParent = aimPivot.transform.parent.rotation;
-    }
-
-    void LateUpdate()
-    {
-        if(CanUpdate()) UpdateTransform();
-        UpdateNonProcedural();
+        //Post-Process Rotation
+        if(!hasInitializedPostProcessingCache) InitializePostProcessingCache();
         
-        PostProcessingPass();
-
+        //Rotational Sway / Lag
+        baseRot *= GetRotationalSway();
         
-    }
+        //Auto-Calculation
+        if(CanAutoCalculateForward()) AutoCalculateForward();
+        if(CanAutoCalculateForwardProcedural()) AutoCalculateForwardProcedural();
 
-    //Transform
-    public void UpdateNonProcedural()
-    {
-        transform.position = parentTransform.position;
-        baseRot = parentTransform.rotation;
-        
-        /*
-        Debug.DrawRay(parentTransform.position, parentTransform.right, Color.red);
-        Debug.DrawRay(parentTransform.position, parentTransform.up, Color.green);
-        Debug.DrawRay(parentTransform.position, parentTransform.forward, Color.blue);    
-        */
-    }
-    public void UpdateTransform()
-    {
-        if (!parentTransform) return;
-        if (disableProcedural) return;
- 
-        //Rotation
-        baseRot = Quaternion.identity;
-        baseRot *= aimPivot.transform.rotation;   // aim rotation
-        baseRot *=  Quaternion.Inverse(aimPivot.transform.parent.rotation) * parentTransform.rotation; // isolated anim rotation
-        baseRot *= weapon.GetForwardRotation(); // relative forward
+        if(autoCalculateRoll) AutoCalculateRoll();
 
-        // Position
-        basePos = Vector3.zero; 
-        basePos += positionOffset;
+        //Modifiers (staged after post processing for better behavior)
+        rotationMod = Quaternion.identity;
+        positionMod = Vector3.zero;
+        foreach(var modifier in modifiers)
+        {
+            rotationMod *= modifier.GetRotationOffset();
+            positionMod += modifier.GetPositionOffset();
+        }
+        baseRot *= rotationMod;
         basePos += positionMod;
-        if(aimPivot) transform.position = aimPivot.transform.TransformPoint(basePos); //Require AimPivot
+
+        //Apply
+        transform.rotation = baseRot; 
+        transform.position = aimPivot.transform.TransformPoint(basePos);
     }
 
-    /*
-    public void UpdateTransform_ExplicitQuaternion() //DEPRECATED
+    //Procedural Positioning
+    public override System.Enum ReadWeaponPositionState()
     {
-        if (!parentTransform) return;
- 
-        baseRot = Quaternion.identity;
-        basePos = Vector3.zero; 
-
-        //Rotation
-        if(aimPivot) // Isolate pivot rotation to not double count
-        {
-            Quaternion localPivot = aimPivot.transform != null ? Quaternion.Inverse(aimPivot.transform.parent.rotation) : Quaternion.identity;
-            Quaternion offsetPivot = initialLocalRotationPivot * localPivot;
-
-            baseRot *= aimPivot.transform.rotation * offsetPivot;
-        }
-
-        baseRot *= rotationOffset; // Custom offset applied after pivot, used for weapon types with different forwards
-        baseRot *= parentTransform.rotation;
-
-        transform.rotation = baseRot;
-
-        // Position
-        Vector3 proceduralLocalPos = positionOffset + positionMod;
-        Vector3 animLocalPos = parentTransform.position - aimPivot.transform.position;
-
-        basePos = proceduralPosition ? proceduralLocalPos : animLocalPos;
-
-        if(aimPivot)
-        {
-            transform.position = aimPivot.transform.TransformPoint(basePos);
-        }
-        else
-        {
-            transform.position = basePos;
-        }
+        if(weapon is Gun gun) return gun.positionState;
+        return default;
     }
-    */
+
+    public override Vector3 PositionFromState(System.Enum state)
+    {
+        if(state is Gun.GunPosition gunPosition)
+        {
+            switch (gunPosition)
+            {
+                case Gun.GunPosition.Default: return defaultPosition;
+                case Gun.GunPosition.Aimed: return aimedPosition;
+            }
+        }
+
+        return defaultPosition;
+    }
 
     //Post Processing
     public void InitializePostProcessingCache()
@@ -148,33 +81,8 @@ public class ProceduralGunTransform : MonoBehaviour
         //Cache
         CacheForwardOffset();
     }
-
-    public void PostProcessingPass()
-    {
-        //Post-Process Rotation
-        if(!hasInitializedPostProcessingCache) InitializePostProcessingCache();
-
-        if (CanAutoCalculateForward())
-        {
-            AutoCalculateForward();
-        }
-
-        if (CanAutoCalculateForwardProcedural())
-        {
-            AutoCalculateForwardProcedural();
-        }
-
-        if(autoCalculateRoll)
-        {
-            AutoCalculateRoll();
-        }
-        
-        //Mods (staged after post processing for better behavior)
-        baseRot *= rotationMod;
-
-        transform.rotation = baseRot; 
-    }
-
+    
+    //Experimental
     public void CacheForwardOffset()
     {
         calculatedForwardOffset = Quaternion.identity;
@@ -227,7 +135,7 @@ public class ProceduralGunTransform : MonoBehaviour
             return;
         }
 
-        Vector3 gunForward = baseRot *weapon.GetForwardAxis();
+        Vector3 gunForward = baseRot * Vector3.forward;
         Vector3 gunUp = baseRot * Vector3.up;
         Vector3 targetUp = forwardReference.up;
 

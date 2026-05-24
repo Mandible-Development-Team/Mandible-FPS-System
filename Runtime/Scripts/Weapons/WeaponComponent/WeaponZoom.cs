@@ -5,7 +5,7 @@ using UnityEngine;
 using Mandible.FPSController;
 using Mandible.PlayerController;
 
-public class WeaponZoom : WeaponComponent
+public class WeaponZoom : ProceduralWeaponModifier
 {
     [SerializeField] float zoomedInMultiplier = 1.5f;
     [SerializeField] float zoomSpeed = 5f;

@@ -1,4 +1,6 @@
 using UnityEngine;
+using System;
+
 using Mandible.PlayerController;
 
 #if UNITY_EDITOR
@@ -49,6 +51,9 @@ namespace Mandible.FPSController
         //[Header("Advanced")]
         //[SerializeField] float armWeightInterpolationSpeed = 0f;
 
+        //Events
+        [HideInInspector] public Action onPostProcessCompleted;
+
         //Cache
         TwoBoneIKContext leftArmContext, rightArmContext;
         float lenA, lenB;
@@ -78,11 +83,14 @@ namespace Mandible.FPSController
             ApplySpineConstraint();
 
             //IK
-            if (disableIK) return;
-            
-            //Arms
-            SolveTwoBoneIK(leftArmContext);
-            SolveTwoBoneIK(rightArmContext);
+            if (!disableIK){
+                //Arms
+                SolveTwoBoneIK(leftArmContext);
+                SolveTwoBoneIK(rightArmContext);
+            }
+
+            //Post Process
+            onPostProcessCompleted.Invoke();
         }
 
         void Initialize()
