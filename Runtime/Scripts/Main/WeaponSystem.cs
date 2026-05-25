@@ -41,6 +41,22 @@ namespace Mandible.FPSController
             SetInputListeners();
         }
 
+        void OnEnable()
+        {
+            foreach(var w in weapons) 
+            {
+                w.isDisabled = false;
+            }
+        }
+
+        void OnDisable()
+        {
+            foreach(var w in weapons) 
+            {
+                w.isDisabled = true;
+            }
+        }
+
         void Start()
         {
             if(!Validate(false)) return;
@@ -115,6 +131,7 @@ namespace Mandible.FPSController
             {
                 currentWeapon = weapon;
                 currentWeapon.gameObject.SetActive(true);
+                currentWeapon.isEquipped = true;
 
                 proceduralRig?.SetTargets(currentWeapon.handle, currentWeapon.foreHandle);
 
@@ -128,6 +145,8 @@ namespace Mandible.FPSController
             {
                 StopListening(currentWeapon); //Events
                 currentWeapon.gameObject.SetActive(false);
+                currentWeapon.isEquipped = false;
+
                 currentWeapon = null;
             }
         }

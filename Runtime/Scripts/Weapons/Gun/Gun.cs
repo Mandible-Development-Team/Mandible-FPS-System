@@ -115,6 +115,7 @@ namespace Mandible.FPSController
 
         public override void Use()
         {
+            if (!CanUseWeapon()) return;
             if (Time.fixedTime < nextFireTime) return;
             base.Use();
             currentCoroutine = StartCoroutine(Fire());
@@ -230,10 +231,13 @@ namespace Mandible.FPSController
             if (Physics.Raycast(camRay, out RaycastHit camHit, DETECTION_DISTANCE, hitMask))
             {
                 targetPoint = camHit.point;
+                Debug.DrawLine(cam.position, targetPoint, Color.green, 0.1f);
+                Debug.DrawRay(camHit.point, Vector3.up * 0.2f, Color.green, 0.1f);
             }
             else
             {
                 targetPoint = cam.position + cam.forward * DETECTION_DISTANCE;
+                Debug.DrawLine(cam.position, targetPoint, Color.red, 0.1f);
             }
 
             origin = muzzlePoint.position;
@@ -319,12 +323,14 @@ namespace Mandible.FPSController
 
         public void Aim()
         {
+            if (isDisabled) return;
             positionState = GunPosition.Aimed;
             OnAim?.Invoke();
         }
 
         public void UnAim()
         {
+            if (isDisabled) return;
             positionState = GunPosition.Default;
             OnUnAim?.Invoke();
         }
@@ -338,6 +344,7 @@ namespace Mandible.FPSController
 
         protected override bool CanUseWeapon()
         {
+            if(!base.CanUseWeapon()) return false;
             if (isReloading) return false;
             if (ammoInMagazine <= 0 && !isInfiniteAmmo) return false;
             return true;

@@ -19,7 +19,8 @@ namespace Mandible.FPSController
         public IPlayer owner;
         public Camera ownerCamera;
         [HideInInspector] public ProceduralWeaponTransform pt;
-        [HideInInspector] public bool isEquipped;
+        public bool isEquipped;
+        public bool isDisabled = false;
 
         [Header("Weapon Settings")]
         public float damage;
@@ -89,7 +90,7 @@ namespace Mandible.FPSController
         //Flags
         protected virtual bool CanUseWeapon()
         {
-            return true;
+            return !isDisabled && isEquipped;
         }
 
         //Initialization
