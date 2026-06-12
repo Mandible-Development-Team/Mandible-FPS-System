@@ -45,6 +45,8 @@ namespace Mandible.FPSController
         public ParticleSystem bulletHit;
 
         //Events
+        [HideInInspector] public UnityEvent OnReloadStart = new UnityEvent();
+        [HideInInspector] public UnityEvent OnReloadComplete = new UnityEvent();
         [HideInInspector] public UnityEvent OnAim = new UnityEvent();
         [HideInInspector] public UnityEvent OnUnAim = new UnityEvent();
 
@@ -106,33 +108,42 @@ namespace Mandible.FPSController
             base.Unequip();
             ResetState();
 
-            if (currentCoroutine != null)
-                StopCoroutine(currentCoroutine);
-            StopAllCoroutines();
+            if (currentCoroutine != null) StopCoroutine(currentCoroutine);
+            //StopAllCoroutines();
 
+            currentCoroutine = null;
+            triggerHeld = false;
             isReloading = false;
         }
 
         public override void Use()
         {
-            if (Time.fixedTime < nextFireTime) return;
+            if (!CanUseWeapon()) return;
+            if (Time.time < nextFireTime) return;
+
             base.Use();
+            if (currentCoroutine != null) return;
             currentCoroutine = StartCoroutine(Fire());
         }
 
         public void ReloadInput()
         {
-            if (ammoInMagazine < magazineSize && spareAmmo > 0)
-            {
-                currentCoroutine ??= StartCoroutine(Reload());
-            }
+            if (currentCoroutine != null) StopCoroutine(currentCoroutine);
+            currentCoroutine = StartCoroutine(Reload());
         }
 
         private IEnumerator Fire()
         {
-            if (ammoInMagazine <= 0 && (spareAmmo > 0 || isInfiniteAmmo))
+            // Reload
+            if (ShouldReload())
             {
-                yield return currentCoroutine ??= StartCoroutine(Reload());
+                currentCoroutine = StartCoroutine(Reload());
+                yield break;
+            }
+
+            // Other Checks
+            if (!CanUseWeapon())
+            {
                 currentCoroutine = null;
                 yield break;
             }
@@ -230,10 +241,13 @@ namespace Mandible.FPSController
             if (Physics.Raycast(camRay, out RaycastHit camHit, DETECTION_DISTANCE, hitMask))
             {
                 targetPoint = camHit.point;
+                Debug.DrawLine(cam.position, targetPoint, Color.green, 0.1f);
+                Debug.DrawRay(camHit.point, Vector3.up * 0.2f, Color.green, 0.1f);
             }
             else
             {
                 targetPoint = cam.position + cam.forward * DETECTION_DISTANCE;
+                Debug.DrawLine(cam.position, targetPoint, Color.red, 0.1f);
             }
 
             origin = muzzlePoint.position;
@@ -293,11 +307,20 @@ namespace Mandible.FPSController
 
         //Actions
 
+        float _timeUntilReloadComplete = 0f;
+        public float timeUntilReloadComplete => _timeUntilReloadComplete;
         private IEnumerator Reload()
         {
             isReloading = true;
+            gunState = GunState.Reloading;
+            OnReloadStart?.Invoke();
 
-            yield return new WaitForSeconds(reloadTime);
+            _timeUntilReloadComplete = 0f;
+            while (timeUntilReloadComplete < reloadTime)
+            {
+                _timeUntilReloadComplete += Time.deltaTime;
+                yield return null;
+            }
 
             if (!isInfiniteAmmo)
             {
@@ -311,7 +334,9 @@ namespace Mandible.FPSController
                 ammoInMagazine = magazineSize;
             }
 
+            OnReloadComplete?.Invoke();
             isReloading = false;
+            gunState = GunState.Idling;
             currentCoroutine = null;
         }
 
@@ -319,16 +344,17 @@ namespace Mandible.FPSController
 
         public void Aim()
         {
+            if (isDisabled) return;
             positionState = GunPosition.Aimed;
             OnAim?.Invoke();
         }
 
         public void UnAim()
         {
+            if (isDisabled) return;
             positionState = GunPosition.Default;
             OnUnAim?.Invoke();
         }
-
 
         public void ResetState()
         {
@@ -338,6 +364,7 @@ namespace Mandible.FPSController
 
         protected override bool CanUseWeapon()
         {
+            if(!base.CanUseWeapon()) return false;
             if (isReloading) return false;
             if (ammoInMagazine <= 0 && !isInfiniteAmmo) return false;
             return true;
@@ -350,6 +377,11 @@ namespace Mandible.FPSController
             if (dmg.IsDead) return false;
 
             return true;
+        }
+
+        protected bool ShouldReload()
+        {
+            return ammoInMagazine <= 0 && (spareAmmo > 0 || isInfiniteAmmo);
         }
 
         //Getters/Setters

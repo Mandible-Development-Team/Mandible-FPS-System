@@ -26,6 +26,7 @@ namespace Mandible.FPSController
 
         //Events
         [Header("Events")]
+        [HideInInspector] public UnityEvent OnWeaponSwitch = new UnityEvent();
         [HideInInspector] public UnityEvent <HitType, RaycastHit, Vector3> onHitTarget;
         [HideInInspector] public UnityEvent <HitType, RaycastHit, Vector3> onKillTarget;
 
@@ -39,6 +40,22 @@ namespace Mandible.FPSController
             Initialize();
 
             SetInputListeners();
+        }
+
+        void OnEnable()
+        {
+            foreach(var w in weapons) 
+            {
+                w.isDisabled = false;
+            }
+        }
+
+        void OnDisable()
+        {
+            foreach(var w in weapons) 
+            {
+                w.isDisabled = true;
+            }
         }
 
         void Start()
@@ -84,6 +101,7 @@ namespace Mandible.FPSController
         void SwitchWeapon(Weapon newWeapon)
         {
             if(weapons.Count < 2) return;
+            OnWeaponSwitch?.Invoke();
 
             UnequipWeapon();
             EquipWeapon(newWeapon);
@@ -104,6 +122,7 @@ namespace Mandible.FPSController
         void SelectWeapon(int index)
         {
             if(index < 0 || index >= weapons.Count) return;
+            OnWeaponSwitch?.Invoke();
 
             UnequipWeapon();
             EquipWeapon(weapons[index]);
@@ -115,6 +134,8 @@ namespace Mandible.FPSController
             {
                 currentWeapon = weapon;
                 currentWeapon.gameObject.SetActive(true);
+                currentWeapon.isEquipped = true;
+                currentWeapon.Equip();
 
                 proceduralRig?.SetTargets(currentWeapon.handle, currentWeapon.foreHandle);
 
@@ -128,6 +149,9 @@ namespace Mandible.FPSController
             {
                 StopListening(currentWeapon); //Events
                 currentWeapon.gameObject.SetActive(false);
+                currentWeapon.isEquipped = false;
+                currentWeapon.Unequip();
+
                 currentWeapon = null;
             }
         }
