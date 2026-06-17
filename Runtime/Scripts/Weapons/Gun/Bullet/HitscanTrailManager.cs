@@ -5,11 +5,21 @@ namespace Mandible.FPSController
 {
     public class HitscanTrailManager
     {
+        public event System.Action<TrailHitData> OnTrailHit;
+        public struct TrailHitData
+        {
+            public Vector3 point;
+            public Vector3 normal;
+            public Vector3 direction;
+        }
+
         private struct ActiveTrail
         {
             public TrailRenderer trail;
             public Vector3 startPos;
             public Vector3 endPos;
+            public Vector3 hitNormal;
+            public Vector3 hitDirection;
             public float startTime;
             public float duration;
         }
@@ -48,6 +58,12 @@ namespace Mandible.FPSController
 
                 if (t >= 1f)
                 {
+                    OnTrailHit?.Invoke(new TrailHitData {
+                        point = data.endPos,
+                        normal = data.hitNormal,
+                        direction = data.hitDirection
+                    });
+
                     data.trail.transform.position = data.endPos;
                     ReturnToPool(data.trail);
 
@@ -62,7 +78,7 @@ namespace Mandible.FPSController
             }
         }
 
-        public void FireTrail(Vector3 origin, Vector3 hitPoint, float speed)
+        public void FireTrail(Vector3 origin, Vector3 hitPoint, Vector3 direction, Vector3 normal, float speed)
         {
             TrailRenderer trail = GetFromPool();
             
@@ -78,6 +94,8 @@ namespace Mandible.FPSController
                 trail = trail,
                 startPos = origin,
                 endPos = hitPoint,
+                hitNormal = normal,
+                hitDirection = direction,
                 startTime = Time.time,
                 duration = duration
             });

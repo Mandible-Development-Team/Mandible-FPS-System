@@ -49,8 +49,8 @@ namespace Mandible.FPSController
             inputActions = new PlayerInputActions();
             inputActions.Enable();
 
-            inputActions.Player.Fire.performed += ctx => triggerHeld = true;
-            inputActions.Player.Fire.canceled += ctx => triggerHeld = false;
+            inputActions.Weapons.Fire.performed += ctx => triggerHeld = true;
+            inputActions.Weapons.Fire.canceled += ctx => triggerHeld = false;
         }
 
         protected void Start()

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
 using UnityEngine;
 using UnityEngine.Events;
@@ -12,8 +13,12 @@ namespace Mandible.FPSController
 {
     public class Gun : Weapon
     {
+        [SerializeField] GameObject currentHitObject;
+
         public enum GunState { Idling, Firing, Reloading }
         public enum GunPosition { Default, Aimed }
+
+        public Dictionary<GunState, Func<IEnumerator>> GunActionMapping;
 
         [Header("Gun State")]
         public GunState gunState = GunState.Idling;
@@ -26,6 +31,7 @@ namespace Mandible.FPSController
 
         [Header("Gun Settings")]
         public float fireRate = 10f;
+        public int bulletsPerShot = 1;
         public float reloadTime = 2f;
         [Space(4)]
         public float bulletSpeed = 1f;
@@ -37,14 +43,19 @@ namespace Mandible.FPSController
         public int magazineSize = 30;
         public int spareAmmo = 90;
 
+        [Header("Bullets and Trails")]
+        public TrailRenderer bulletFire;
+        public int trailPoolSize = 256;
+        private HitscanTrailManager trailManager;
+
         [Header("Particles")]
         public Projectile projectilePrefab;
         public Transform muzzlePoint;
         public ParticleSystem muzzleFlash;
-        public ParticleSystem bulletFire;
         public ParticleSystem bulletHit;
 
         //Events
+        [HideInInspector] public UnityEvent OnFire = new UnityEvent();
         [HideInInspector] public UnityEvent OnReloadStart = new UnityEvent();
         [HideInInspector] public UnityEvent OnReloadComplete = new UnityEvent();
         [HideInInspector] public UnityEvent OnAim = new UnityEvent();
@@ -52,10 +63,11 @@ namespace Mandible.FPSController
 
         //State
         private bool triggerHeld = false;
+        private bool _hasFired = false;
         private bool isReloading = false;
         private float nextFireTime = 0f;
 
-        private Coroutine currentCoroutine;
+        private Coroutine _currentAction;
         
         [HideInInspector] public WeaponZoom zoom;
 
@@ -66,18 +78,36 @@ namespace Mandible.FPSController
         {
             base.Awake();
 
+            // Data
             isReloading = false;
             ammoInMagazine = magazineSize;
 
-            //INPUT ACTIONS TEST
+            // Actions
+            GunActionMapping = new()
+            {
+                { GunState.Idling,    () => null },
+                { GunState.Firing,    Fire },
+                { GunState.Reloading, Reload }
+            };
+
+            // FX
+            if (bulletFire != null)
+            {
+                trailManager = new HitscanTrailManager(bulletFire, trailPoolSize, null);
+                trailManager.OnTrailHit += HandleTrailImpact;
+            }
+
+            // Input
             inputActions = new PlayerInputActions();
             inputActions.Enable();
 
-            inputActions.Player.Fire.performed += ctx => triggerHeld = true;
-            inputActions.Player.Fire.canceled += ctx => triggerHeld = false;
+            inputActions.Weapons.Fire.performed += ctx => triggerHeld = true;
+            inputActions.Weapons.Fire.canceled += ctx => triggerHeld = false;
 
-            inputActions.Player.Aim.performed += ctx => Aim();
-            inputActions.Player.Aim.canceled += ctx => UnAim();
+            inputActions.Weapons.Aim.performed += ctx => Aim();
+            inputActions.Weapons.Aim.canceled += ctx => UnAim();
+
+            inputActions.Weapons.Reload.performed += ctx => StartNewAction(GunState.Reloading);
         }
 
         protected void Start()
@@ -88,9 +118,10 @@ namespace Mandible.FPSController
         public void LateUpdate()
         {
             if (!isEquipped) return;
-
-
             if (triggerHeld) Use();
+
+            // Trails
+            trailManager?.UpdateTrails();
         }
 
         void OnEnable()
@@ -108,10 +139,9 @@ namespace Mandible.FPSController
             base.Unequip();
             ResetState();
 
-            if (currentCoroutine != null) StopCoroutine(currentCoroutine);
-            //StopAllCoroutines();
+            if (_currentAction != null) StopCoroutine(_currentAction);
 
-            currentCoroutine = null;
+            _currentAction = null;
             triggerHeld = false;
             isReloading = false;
         }
@@ -119,34 +149,28 @@ namespace Mandible.FPSController
         public override void Use()
         {
             if (!CanUseWeapon()) return;
-            if (Time.time < nextFireTime) return;
+            if (gunState != GunState.Idling) return; // If action is in progress
 
-            base.Use();
-            if (currentCoroutine != null) return;
-            currentCoroutine = StartCoroutine(Fire());
-        }
+            GunState stateToStart = GunState.Idling;
+            if (ShouldReload())
+            {
+                stateToStart = GunState.Reloading;
+            }
+            else if (Time.time >= nextFireTime)
+            {
+                stateToStart = GunState.Firing;
+            }
 
-        public void ReloadInput()
-        {
-            if (currentCoroutine != null) StopCoroutine(currentCoroutine);
-            currentCoroutine = StartCoroutine(Reload());
+            if (stateToStart != GunState.Idling)
+            {
+                StartNewAction(stateToStart);
+            }
         }
 
         private IEnumerator Fire()
         {
-            // Reload
-            if (ShouldReload())
-            {
-                currentCoroutine = StartCoroutine(Reload());
-                yield break;
-            }
-
-            // Other Checks
-            if (!CanUseWeapon())
-            {
-                currentCoroutine = null;
-                yield break;
-            }
+            base.Use(); // Firing is when we truly use the weapon
+            OnFire?.Invoke();
 
             // Consume ammo
             ammoInMagazine--;
@@ -157,36 +181,58 @@ namespace Mandible.FPSController
                 muzzleFlash.Play(true);
             }
 
-            // Spread
-            Vector3 origin = Vector3.zero;
-            Vector3 shootDir = GetSpreadDirection(out origin);
-            
-            if (bulletFire != null) EmitBulletfire(origin, shootDir);
-
-            if (isRaycast)
+            for(int x = 0; x < bulletsPerShot; x++)
             {
-                Ray ray = new Ray(origin, shootDir);
-                
-                if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, hitMask)){
-                    ProcessHit(hit, shootDir);
+                // Spread
+                Vector3 origin = muzzlePoint.position;
+                Vector3 cameraLook = ownerCamera.transform.position + (ownerCamera.transform.forward * 1000f);
+                Vector3 shootDir = (cameraLook - origin).normalized;
+
+                if (isRaycast)
+                {
+                    RaycastHit cameraAimHit;
+                    shootDir = GetRaycastSpreadVector(origin, out cameraAimHit);
+
+                    Vector3 actualWhiteEnd = cameraAimHit.collider != null ? cameraAimHit.point : cameraLook;
+                    Debug.DrawLine(ownerCamera.transform.position, actualWhiteEnd, Color.white, 2f);
+
+                    Ray ray = new Ray(origin, shootDir);
+                    RaycastHit hit;
+
+                    if (Physics.Raycast(ray, out hit, 1000f, hitMask, triggerInteraction))
+                    {
+                        Debug.DrawLine(origin, hit.point, Color.red, 2f);
+
+                        // Ignore self
+                        if (hit.collider.gameObject == (owner as MonoBehaviour).gameObject) continue;
+
+                        ProcessHit(hit, shootDir);
+                        EmitBulletfire(origin, hit.point, shootDir, hit.normal);
+                        currentHitObject = hit.collider.gameObject;
+                    }
+                    else
+                    {
+                        Debug.DrawLine(origin, origin + (shootDir * 1000f), Color.red, 2f);
+
+                        currentHitObject = null;
+                        // Visuals only hit at max distance
+                        EmitBulletfire(origin, origin + (shootDir * 1000f), shootDir, Vector3.up);
+                    }
                 }
-
-                if (debug) Debug.DrawRay(origin, shootDir * 100f, Color.red, 1f);
-            }
-            else
-            {
-                FireProjectile(shootDir);
+                else
+                {
+                    FireProjectile(shootDir);
+                }
             }
 
             // Set next fire time
             nextFireTime = Time.time + 1f / fireRate;
-
             yield return new WaitForSeconds(1f / fireRate);
-            currentCoroutine = null;
+
+            StopCurrentAction();
         }
 
-        //Bullets & Projectiles
-
+        // Bullets & Projectiles
         private void FireProjectile(Vector3 dir)
         {
             if (projectilePrefab == null) return;
@@ -194,78 +240,32 @@ namespace Mandible.FPSController
             p.sender = (owner as MonoBehaviour).gameObject;
         }
 
-        /*
-        private void EmitBulletfire(Vector3 origin, Vector3 shootDir)
+        private void EmitBulletfire(Vector3 origin, Vector3 targetHitPoint, Vector3 dir, Vector3 normal)
         {
-            ParticleSystem.EmitParams emitParams = new ParticleSystem.EmitParams();
-            
-            emitParams.velocity = shootDir.normalized * bulletSpeed;
-            if(bulletFire.main.simulationSpace != ParticleSystemSimulationSpace.World){
-                Debug.LogWarning("Bullet Fire Particle System should be set to World simulation space for correct bullet direction.");
-                emitParams.position = origin - muzzlePoint.position;
-            }
-            else
-            {
-                if(emitParams.)
-                Vector3 initialOffset = shootDir * bulletSpeed * Time.deltaTime;
-                emitParams.position = origin - initialOffset;
-            }
-
-            bulletFire.Emit(emitParams, 1);
-            Debug.Log(emitParams.position);
-        }
-        */
-
-        private void EmitBulletfire(Vector3 origin, Vector3 shootDir)
-        {
-            if (bulletFire == null) return;
-
-            bulletFire.transform.position = origin;
-            bulletFire.transform.rotation = Quaternion.LookRotation(shootDir);
-
-            float nudgeDistance = 0f;
-            bulletFire.transform.position += shootDir.normalized * nudgeDistance;
-
-            bulletFire.Play();
+            trailManager.FireTrail(origin, targetHitPoint, dir, normal, bulletSpeed);
         }
 
         private const float DETECTION_DISTANCE = 1000f;
-        Vector3 GetSpreadDirection(out Vector3 origin)
+        Vector3 GetRaycastSpreadVector(Vector3 origin, out RaycastHit targetHit)
         {
-            var cam = owner.Camera.transform;
+            Ray cameraRay = new Ray(ownerCamera.transform.position, ownerCamera.transform.forward);
+            bool hitSomething = Physics.Raycast(cameraRay, out targetHit, 1000f, hitMask, triggerInteraction);
 
-            Ray camRay = new Ray(cam.position, cam.forward);
+            float distance = hitSomething ? Mathf.Max(targetHit.distance, 0.5f) : 1000f;
+            Vector3 targetPoint = cameraRay.GetPoint(distance);
 
-            Vector3 targetPoint;
+            Vector3 direction = targetPoint - origin;
+            Vector3 baseDir = (direction.magnitude < 0.01f) ? ownerCamera.transform.forward : direction.normalized;
 
-            if (Physics.Raycast(camRay, out RaycastHit camHit, DETECTION_DISTANCE, hitMask))
-            {
-                targetPoint = camHit.point;
-                Debug.DrawLine(cam.position, targetPoint, Color.green, 0.1f);
-                Debug.DrawRay(camHit.point, Vector3.up * 0.2f, Color.green, 0.1f);
-            }
-            else
-            {
-                targetPoint = cam.position + cam.forward * DETECTION_DISTANCE;
-                Debug.DrawLine(cam.position, targetPoint, Color.red, 0.1f);
-            }
-
-            origin = muzzlePoint.position;
-
-            Vector3 baseDir = (targetPoint - origin).normalized;
-
-            float randYaw   = Random.Range(-spreadAngle, spreadAngle);
-            float randPitch = Random.Range(-spreadAngle, spreadAngle);
-
+            float randYaw = UnityEngine.Random.Range(-spreadAngle, spreadAngle);
+            float randPitch = UnityEngine.Random.Range(-spreadAngle, spreadAngle);
             Quaternion spreadRot = Quaternion.Euler(randPitch, randYaw, 0f);
-            Vector3 shootDir = spreadRot * baseDir;
 
-            return shootDir.normalized;
+            return (spreadRot * baseDir).normalized;
         }
 
         private void ProcessHit(RaycastHit hit, Vector3 shootDir)
         {
-            
             var dmg = hit.collider.GetComponent<IDamageable>();
             if (CanDamage(dmg))
             {
@@ -305,14 +305,50 @@ namespace Mandible.FPSController
             float distance = Vector3.Distance(muzzlePoint.transform.position, hit.point);
         }
 
+        private void HandleTrailImpact(HitscanTrailManager.TrailHitData hitData)
+        {
+            if (bulletHit != null)
+            {
+                Quaternion rotation = Quaternion.LookRotation(hitData.normal);
+                ParticleSystem effect = Instantiate(bulletHit, hitData.point, rotation);
+                effect.Play(true);
+                Destroy(effect.gameObject, 2f);
+            }
+        }
+
         //Actions
+        public void StopCurrentAction()
+        {
+            if (_currentAction != null) StopCoroutine(_currentAction);
+            
+            _currentAction = null;
+            gunState = GunState.Idling;
+        }
+
+        public void StartNewAction(GunState state, bool interrupt = false)
+        {
+            if (!interrupt && gunState != GunState.Idling) return; // If action is in progress
+            StopCurrentAction();
+
+            GunActionMapping.TryGetValue(state, out Func<IEnumerator> actionFunc);
+            if (actionFunc == null)
+            {
+                Debug.LogError($"Mandible.FPSController.Gun: No action found for state {state}");
+                return;
+            }
+
+            IEnumerator action = actionFunc.Invoke();
+            if (action == null) return;
+
+            gunState = state;
+            _currentAction = StartCoroutine(action);
+        }
 
         float _timeUntilReloadComplete = 0f;
         public float timeUntilReloadComplete => _timeUntilReloadComplete;
         private IEnumerator Reload()
         {
             isReloading = true;
-            gunState = GunState.Reloading;
             OnReloadStart?.Invoke();
 
             _timeUntilReloadComplete = 0f;
@@ -336,8 +372,8 @@ namespace Mandible.FPSController
 
             OnReloadComplete?.Invoke();
             isReloading = false;
-            gunState = GunState.Idling;
-            currentCoroutine = null;
+
+            StopCurrentAction();
         }
 
         //States

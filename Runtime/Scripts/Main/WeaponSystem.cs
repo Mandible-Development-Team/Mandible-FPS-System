@@ -26,7 +26,7 @@ namespace Mandible.FPSController
 
         //Events
         [Header("Events")]
-        [HideInInspector] public UnityEvent OnWeaponSwitch = new UnityEvent();
+        [HideInInspector] public UnityEvent<Weapon, Weapon> OnWeaponSwitch = new UnityEvent<Weapon, Weapon>();
         [HideInInspector] public UnityEvent <HitType, RaycastHit, Vector3> onHitTarget;
         [HideInInspector] public UnityEvent <HitType, RaycastHit, Vector3> onKillTarget;
 
@@ -36,10 +36,27 @@ namespace Mandible.FPSController
         void Awake()
         {
             if(!Validate()) return;
-
             Initialize();
-
             SetInputListeners();
+
+            // Weapons
+            weapons = weaponHolder?.GetComponentsInChildren<Weapon>(true).ToList() ?? new List<Weapon>();
+
+            // Initialize Weapons
+            foreach(Weapon weapon in weapons)
+            {
+                InitializeWeapon(weapon);
+            }
+            
+            // Equip first weapon by default
+            if(weapons.Count > 0) 
+            {
+                EquipWeapon(weapons[0]);
+            }
+            else
+            {
+                Debug.LogWarning("WeaponSystem: No weapons found in Weapon Holder. Please assign weapons to the Weapon Holder.");
+            }
         }
 
         void OnEnable()
@@ -55,29 +72,6 @@ namespace Mandible.FPSController
             foreach(var w in weapons) 
             {
                 w.isDisabled = true;
-            }
-        }
-
-        void Start()
-        {
-            if(!Validate(false)) return;
-
-            weapons = weaponHolder?.GetComponentsInChildren<Weapon>(true).ToList() ?? new List<Weapon>();
-
-            //Initialize Weapons
-            foreach(Weapon weapon in weapons)
-            {
-                InitializeWeapon(weapon);
-            }
-            
-            //Equip first weapon by default
-            if(weapons.Count > 0) 
-            {
-                EquipWeapon(weapons[0]);
-            }
-            else
-            {
-                Debug.LogWarning("WeaponSystem: No weapons found in Weapon Holder. Please assign weapons to the Weapon Holder.");
             }
         }
 
@@ -101,10 +95,12 @@ namespace Mandible.FPSController
         void SwitchWeapon(Weapon newWeapon)
         {
             if(weapons.Count < 2) return;
-            OnWeaponSwitch?.Invoke();
+            Weapon previousWeapon = currentWeapon;
 
             UnequipWeapon();
             EquipWeapon(newWeapon);
+
+            OnWeaponSwitch?.Invoke(previousWeapon, currentWeapon);
         }
 
         void NextWeapon()
@@ -122,10 +118,12 @@ namespace Mandible.FPSController
         void SelectWeapon(int index)
         {
             if(index < 0 || index >= weapons.Count) return;
-            OnWeaponSwitch?.Invoke();
+            Weapon previousWeapon = currentWeapon;
 
             UnequipWeapon();
             EquipWeapon(weapons[index]);
+
+            OnWeaponSwitch?.Invoke(previousWeapon, currentWeapon);
         }
 
         void EquipWeapon(Weapon weapon)

@@ -12,7 +12,6 @@ using Mandible.PlayerController;
 namespace Mandible.FPSController
 {
     [RequireComponent(typeof(ProceduralWeaponTransform))] 
-    [DefaultExecutionOrder(-150)]
     public class Weapon : MonoBehaviour
     {
         public GameObject ownerObject;
@@ -25,6 +24,7 @@ namespace Mandible.FPSController
         [Header("Weapon Settings")]
         public float damage;
         public LayerMask hitMask;
+        public QueryTriggerInteraction triggerInteraction = QueryTriggerInteraction.Ignore;
 
         [Header("Status Effects")]
         public StatusEffectContribution contribution;
